@@ -168,4 +168,22 @@ public class FileManager {
         }
         return bookings;
     }
+    // In FileManager.java
+public List<SystemSetting> loadSystemSettings() {
+    List<SystemSetting> settings = new ArrayList<>();
+    String sql = "SELECT setting_name, value FROM system_settings";
+    try (Connection connection = DBConnection.getConnection();
+         PreparedStatement statement = connection.prepareStatement(sql);
+         ResultSet resultSet = statement.executeQuery()) {
+        while (resultSet.next()) {
+            String name = resultSet.getString("setting_name");
+            String value = resultSet.getString("value");
+            settings.add(new SystemSetting(name, value));
+        }
+        System.out.println("System settings loaded successfully.");
+    } catch (SQLException e) {
+        System.out.println("Error loading system settings: " + e.getMessage());
+    }
+    return settings;
+}
 }

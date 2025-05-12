@@ -14,7 +14,7 @@ public class Administrator extends User {
 
     public Administrator(String userId, String username, String password, String name, String email, String contactInfo,
                          String adminId, String securityLevel) {
-        super(userId, username, password, name, email, contactInfo);
+        super(userId, username, password, name, email, contactInfo, "Administrator");
         this.adminId = adminId;
         this.securityLevel = securityLevel;
     }
@@ -35,8 +35,8 @@ public class Administrator extends User {
         this.securityLevel = securityLevel;
     }
 
-    public void createUser(String userId, String username, String password, String name, String email, String contactInfo, String role) {
-        String sql = "INSERT INTO users (user_id, username, password, name, email, contact_info, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    public boolean createUser(String userId, String username, String password, String name, String email, String contact, String role) {
+        String sql = "INSERT INTO users (id, username, password, name, email, contact, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, userId);
@@ -44,15 +44,12 @@ public class Administrator extends User {
             stmt.setString(3, password);
             stmt.setString(4, name);
             stmt.setString(5, email);
-            stmt.setString(6, contactInfo);
+            stmt.setString(6, contact);
             stmt.setString(7, role);
-
-            int rowsInserted = stmt.executeUpdate();
-            if (rowsInserted > 0) {
-                System.out.println("User created successfully with username: " + username);
-            }
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.out.println("Error creating user: " + e.getMessage());
+            return false;
         }
     }
 
@@ -113,6 +110,23 @@ public class Administrator extends User {
             }
         } catch (SQLException e) {
             System.out.println("Error managing user access: " + e.getMessage());
+        }
+    }
+
+    public boolean updateUser(String userId, String username, String name, String email, String contact, String role) {
+        String sql = "UPDATE users SET username = ?, name = ?, email = ?, contact = ?, role = ? WHERE id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, name);
+            stmt.setString(3, email);
+            stmt.setString(4, contact);
+            stmt.setString(5, role);
+            stmt.setString(6, userId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Error updating user: " + e.getMessage());
+            return false;
         }
     }
 }

@@ -14,7 +14,7 @@ public class Agent extends User {
 
     public Agent(String userId, String username, String password, String name, String email, String contactInfo,
                  String agentId, String department, String commission) {
-        super(userId, username, password, name, email, contactInfo);
+        super(userId, username, password, name, email, contactInfo, "Agent");
         this.agentId = agentId;
         this.department = department;
         this.commission = commission;
@@ -44,64 +44,48 @@ public class Agent extends User {
         this.commission = commission;
     }
 
-    public void manageFlights(String flightId, String action) {
+    public boolean manageFlights(String flightNumber, String airline, String origin, String destination,
+                             String departureTime, String arrivalTime, double economyPrice, String action) {
         String sql;
-        switch (action.toLowerCase()) {
-            case "add":
-                sql = "INSERT INTO flights (flight_id, airline, origin, destination, departure_time, arrival_time, price) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                try (Connection conn = DBConnection.getConnection();
-                     PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    // Example values for adding a flight
-                    stmt.setString(1, flightId);
-                    stmt.setString(2, "Example Airline");
-                    stmt.setString(3, "Origin City");
-                    stmt.setString(4, "Destination City");
-                    stmt.setString(5, "2025-05-15 10:00:00");
-                    stmt.setString(6, "2025-05-15 14:00:00");
-                    stmt.setDouble(7, 200.0);
+        if ("add".equalsIgnoreCase(action)) {
+            sql = "INSERT INTO flights (flight_number, airline, origin, destination, departure_time, arrival_time, economy_price) " +
+                  "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        } else if ("update".equalsIgnoreCase(action)) {
+            sql = "UPDATE flights SET airline = ?, origin = ?, destination = ?, departure_time = ?, arrival_time = ?, economy_price = ? " +
+                  "WHERE flight_number = ?";
+        } else if ("delete".equalsIgnoreCase(action)) {
+            sql = "DELETE FROM flights WHERE flight_number = ?";
+        } else {
+            return false; // Invalid action
+        }
 
-                    int rowsInserted = stmt.executeUpdate();
-                    if (rowsInserted > 0) {
-                        System.out.println("Flight added successfully.");
-                    }
-                } catch (SQLException e) {
-                    System.out.println("Error adding flight: " + e.getMessage());
-                }
-                break;
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            if ("add".equalsIgnoreCase(action)) {
+                stmt.setString(1, flightNumber);
+                stmt.setString(2, airline);
+                stmt.setString(3, origin);
+                stmt.setString(4, destination);
+                stmt.setString(5, departureTime);
+                stmt.setString(6, arrivalTime);
+                stmt.setDouble(7, economyPrice);
+            } else if ("update".equalsIgnoreCase(action)) {
+                stmt.setString(1, airline);
+                stmt.setString(2, origin);
+                stmt.setString(3, destination);
+                stmt.setString(4, departureTime);
+                stmt.setString(5, arrivalTime);
+                stmt.setDouble(6, economyPrice);
+                stmt.setString(7, flightNumber);
+            } else if ("delete".equalsIgnoreCase(action)) {
+                stmt.setString(1, flightNumber);
+            }
 
-            case "update":
-                sql = "UPDATE flights SET price = ? WHERE flight_id = ?";
-                try (Connection conn = DBConnection.getConnection();
-                     PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    stmt.setDouble(1, 250.0); // Example updated price
-                    stmt.setString(2, flightId);
-
-                    int rowsUpdated = stmt.executeUpdate();
-                    if (rowsUpdated > 0) {
-                        System.out.println("Flight updated successfully.");
-                    }
-                } catch (SQLException e) {
-                    System.out.println("Error updating flight: " + e.getMessage());
-                }
-                break;
-
-            case "delete":
-                sql = "DELETE FROM flights WHERE flight_id = ?";
-                try (Connection conn = DBConnection.getConnection();
-                     PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    stmt.setString(1, flightId);
-
-                    int rowsDeleted = stmt.executeUpdate();
-                    if (rowsDeleted > 0) {
-                        System.out.println("Flight deleted successfully.");
-                    }
-                } catch (SQLException e) {
-                    System.out.println("Error deleting flight: " + e.getMessage());
-                }
-                break;
-
-            default:
-                System.out.println("Invalid action. Please specify 'add', 'update', or 'delete'.");
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.out.println("Error managing flights: " + e.getMessage());
+            return false;
         }
     }
 
@@ -155,6 +139,19 @@ public class Agent extends User {
             }
         } catch (SQLException e) {
             System.out.println("Error generating reports: " + e.getMessage());
+        }
+    }
+
+    public boolean cancelBooking(String bookingReference) {
+        String sql = "DELETE FROM bookings WHERE reference = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, bookingReference);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.out.println("Error canceling booking: " + e.getMessage());
+            return false;
         }
     }
 }

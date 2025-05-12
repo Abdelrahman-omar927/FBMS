@@ -1,0 +1,68 @@
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    name TEXT,
+    email TEXT,
+    contact TEXT,
+    role TEXT CHECK(role IN ('Customer', 'Agent', 'Administrator'))
+);
+
+
+CREATE TABLE IF NOT EXISTS flights (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    flight_number TEXT UNIQUE,
+    airline TEXT,
+    origin TEXT,
+    destination TEXT,
+    departure_time TEXT,
+    arrival_time TEXT,
+    economy_seats INTEGER,
+    business_seats INTEGER,
+    first_class_seats INTEGER,
+    economy_price REAL,
+    business_price REAL,
+    first_class_price REAL
+);
+
+
+CREATE TABLE IF NOT EXISTS passengers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    passport_number TEXT,
+    date_of_birth TEXT,
+    special_requests TEXT
+);
+
+
+CREATE TABLE IF NOT EXISTS bookings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reference TEXT UNIQUE,
+    customer_id INTEGER,
+    flight_id INTEGER,
+    status TEXT,
+    payment_status TEXT,
+    FOREIGN KEY(customer_id) REFERENCES users(id),
+    FOREIGN KEY(flight_id) REFERENCES flights(id)
+);
+
+
+CREATE TABLE IF NOT EXISTS booking_passengers (
+    booking_id INTEGER,
+    passenger_id INTEGER,
+    seat_class TEXT,
+    FOREIGN KEY(booking_id) REFERENCES bookings(id),
+    FOREIGN KEY(passenger_id) REFERENCES passengers(id)
+);
+
+
+CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    booking_id INTEGER,
+    amount REAL,
+    method TEXT,
+    status TEXT,
+    transaction_date TEXT,
+    FOREIGN KEY(booking_id) REFERENCES bookings(id)
+);
