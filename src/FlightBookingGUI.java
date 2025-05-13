@@ -1,1260 +1,953 @@
-import Models.*;
-import db.DBConnection;
-
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableModel;
-
 import java.awt.*;
-import java.awt.event.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.sql.*;
 import java.util.List;
+import Models.*;
+import db.*;
 
-public class FlightBookingGUI {
+import static Models.User.resetPassword;
+
+public class FlightBookingGUI extends JFrame {
+
+    private static JFrame frame;
+    private static CardLayout cardLayout;
+    private static JPanel cards;
     private static User currentUser;
+    private static final Color DARK_BLUE = Color.decode("#04009A");
+    private static final Color LIGHT_BLUE = Color.decode("#77ACF1");
+    private static final Color CYAN = Color.decode("#3EDBF0");
+    private static final Color VERY_LIGHT_CYAN = Color.decode("#C0FEFC");
 
     public static void main(String[] args) {
-        
-
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                try (Connection connection = DBConnection.getConnection()) {
-                    if (connection != null) {
-                        System.out.println("Connection to SQLite has been established.");
-                     }
-                } catch (SQLException e) {
-                         System.out.println("Connection failed: " + e.getMessage());
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            showLoginWindow();
-        });
+        createAndShowGUI();
     }
 
-    private static void showLoginWindow() {
-        JFrame frame = new JFrame("Flight Booking System - Login");
+    private static void createAndShowGUI() {
+        frame = new JFrame("Flight Booking System");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1000, 600);
-        frame.setLocationRelativeTo(null);
 
-        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(200, 200, 200, 200));
-        panel.setBackground(Color.decode("#04009A")); // Set background color
+        cardLayout = new CardLayout();
+        cards = new JPanel(cardLayout);
 
-        JLabel lblUsername = new JLabel("Username:");
-        lblUsername.setForeground(Color.decode("#C0FEFC")); // Set text color
-        JTextField txtUsername = new JTextField();
-        txtUsername.setBackground(Color.decode("#C0FEFC")); // Set text field background
-        txtUsername.setForeground(Color.decode("#04009A")); // Set text field text color
+        cards.add(createMainPanel(), "MAIN");
+        cards.add(createCustomerPanel(), "CUSTOMER");
+        cards.add(createAgentPanel(), "AGENT");
+        cards.add(createAdminPanel(), "ADMIN");
 
-        JLabel lblPassword = new JLabel("Password:");
-        lblPassword.setForeground(Color.decode("#C0FEFC")); // Set text color
-        JPasswordField txtPassword = new JPasswordField();
-        txtPassword.setBackground(Color.decode("#C0FEFC")); // Set text field background
-        txtPassword.setForeground(Color.decode("#04009A")); // Set text field text color
-
-        JButton btnLogin = new JButton("Login");
-        JButton btnRegister = new JButton("Register");
-        JButton btnChangePassword = new JButton("Change Password");
-
-        panel.add(lblUsername);
-        panel.add(txtUsername);
-        panel.add(lblPassword);
-        panel.add(txtPassword);
-        panel.add(btnLogin);
-        panel.add(btnRegister);
-        panel.add(btnChangePassword);
-
-        btnLogin.addActionListener(e -> {
-            String username = txtUsername.getText();
-            String password = new String(txtPassword.getPassword());
-            currentUser = User.login(username, password);
-            if (currentUser != null) {
-                frame.dispose();
-                showRoleDashboard();
-            } else {
-                JOptionPane.showMessageDialog(frame, "Invalid credentials!");
-            }
-        });
-
-        btnRegister.addActionListener(e -> showRegistrationDialog(frame));
-
-        btnChangePassword.addActionListener(e -> showChangePasswordDialog(frame));
-
-        frame.add(panel);
+        frame.add(cards);
         frame.setVisible(true);
     }
 
-    private static void showRegistrationDialog(JFrame parent) {
-        JDialog dialog = new JDialog(parent, "Register", true);
-        dialog.setSize(1000, 600);
+    private static JPanel createMainPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+        panel.setBackground(VERY_LIGHT_CYAN);
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.decode("#04009A")); // Set background color
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JLabel titleLabel = new JLabel("Welcome to Flight Booking System!");
+        titleLabel.setBounds(100, 50, 300, 30);
+        titleLabel.setForeground(DARK_BLUE);
+        panel.add(titleLabel);
 
-        // User ID
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        JLabel lblUserId = new JLabel("User ID:");
-        lblUserId.setForeground(Color.decode("#C0FEFC")); // Set text color
-        panel.add(lblUserId, gbc);
+        JButton loginButton = new JButton("Login");
+        loginButton.setBounds(150, 100, 200, 30);
+        loginButton.setBackground(LIGHT_BLUE);
+        loginButton.setForeground(DARK_BLUE);
+        panel.add(loginButton);
 
-        gbc.gridx = 1;
-        JTextField txtUserId = new JTextField(20);
-        txtUserId.setBackground(Color.decode("#C0FEFC")); // Set text field background
-        txtUserId.setForeground(Color.decode("#04009A")); // Set text field text color
-        panel.add(txtUserId, gbc);
+        JButton registerButton = new JButton("Register");
+        registerButton.setBounds(150, 150, 200, 30);
+        registerButton.setBackground(LIGHT_BLUE);
+        registerButton.setForeground(DARK_BLUE);
+        panel.add(registerButton);
 
-        // Username
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        JLabel lblUsername = new JLabel("Username:");
-        lblUsername.setForeground(Color.decode("#C0FEFC")); // Set text color
-        panel.add(lblUsername, gbc);
+        // Add Reset Password Button
+        JButton resetPasswordButton = new JButton("Reset Password");
+        resetPasswordButton.setBounds(150, 200, 200, 30);
+        resetPasswordButton.setBackground(LIGHT_BLUE);
+        resetPasswordButton.setForeground(DARK_BLUE);
+        panel.add(resetPasswordButton);
 
-        gbc.gridx = 1;
-        JTextField txtUsername = new JTextField(20);
-        txtUsername.setBackground(Color.decode("#C0FEFC")); // Set text field background
-        txtUsername.setForeground(Color.decode("#04009A")); // Set text field text color
-        panel.add(txtUsername, gbc);
-
-        // Password
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        JLabel lblPassword = new JLabel("Password:");
-        lblPassword.setForeground(Color.decode("#C0FEFC")); // Set text color
-        panel.add(lblPassword, gbc);
-
-        gbc.gridx = 1;
-        JPasswordField txtPassword = new JPasswordField(20);
-        txtPassword.setBackground(Color.decode("#C0FEFC")); // Set text field background
-        txtPassword.setForeground(Color.decode("#04009A")); // Set text field text color
-        panel.add(txtPassword, gbc);
-
-        // Name
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        JLabel lblName = new JLabel("Name:");
-        lblName.setForeground(Color.decode("#C0FEFC")); // Set text color
-        panel.add(lblName, gbc);
-
-        gbc.gridx = 1;
-        JTextField txtName = new JTextField(20);
-        txtName.setBackground(Color.decode("#C0FEFC")); // Set text field background
-        txtName.setForeground(Color.decode("#04009A")); // Set text field text color
-        panel.add(txtName, gbc);
-
-        // Email
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        JLabel lblEmail = new JLabel("Email:");
-        lblEmail.setForeground(Color.decode("#C0FEFC")); // Set text color
-        panel.add(lblEmail, gbc);
-
-        gbc.gridx = 1;
-        JTextField txtEmail = new JTextField(20);
-        txtEmail.setBackground(Color.decode("#C0FEFC")); // Set text field background
-        txtEmail.setForeground(Color.decode("#04009A")); // Set text field text color
-        panel.add(txtEmail, gbc);
-
-        // Contact
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        JLabel lblContact = new JLabel("Contact:");
-        lblContact.setForeground(Color.decode("#C0FEFC")); // Set text color
-        panel.add(lblContact, gbc);
-
-        gbc.gridx = 1;
-        JTextField txtContact = new JTextField(20);
-        txtContact.setBackground(Color.decode("#C0FEFC")); // Set text field background
-        txtContact.setForeground(Color.decode("#04009A")); // Set text field text color
-        panel.add(txtContact, gbc);
-
-        // Role
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        JLabel lblRole = new JLabel("Role:");
-        lblRole.setForeground(Color.decode("#C0FEFC")); // Set text color
-        panel.add(lblRole, gbc);
-
-        gbc.gridx = 1;
-        String[] roles = {"Customer", "Agent", "Administrator"};
-        JComboBox<String> cmbRole = new JComboBox<>(roles);
-        cmbRole.setBackground(Color.decode("#C0FEFC")); // Set combo box background
-        cmbRole.setForeground(Color.decode("#04009A")); // Set combo box text color
-        panel.add(cmbRole, gbc);
-
-        // Register Button
-        gbc.gridx = 0;
-        gbc.gridy = 7;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JButton btnRegister = new JButton("Register");
-        btnRegister.setBackground(Color.decode("#C0FEFC")); // Set button background
-        btnRegister.setForeground(Color.decode("#04009A")); // Set button text color
-        btnRegister.addActionListener(e -> {
-            String userId = txtUserId.getText().trim();
-            String username = txtUsername.getText().trim();
-            String password = new String(txtPassword.getPassword()).trim();
-            String name = txtName.getText().trim();
-            String email = txtEmail.getText().trim();
-            String contact = txtContact.getText().trim();
-            String role = cmbRole.getSelectedItem().toString();
-
-            // Validate input
-            if (userId.isEmpty() || username.isEmpty() || password.isEmpty() || name.isEmpty() || email.isEmpty() || contact.isEmpty()) {
-                showError("All fields are required.");
-                return;
-            }
-
-            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                showError("Invalid email format.");
-                return;
-            }
-
-
-            boolean success = User.register(
-                    txtUsername.getText().trim(),
-                    new String(txtPassword.getPassword()).trim(),
-                    txtName.getText().trim(),
-                    txtEmail.getText().trim(),
-                    txtContact.getText().trim(),
-                    cmbRole.getSelectedItem().toString()
-            );
-            if (success) {
-                JOptionPane.showMessageDialog(dialog, "Registration successful!");
-                dialog.dispose();
-            } else {
-                showError("Registration failed.");
-            }
-        });
-        panel.add(btnRegister, gbc);
-
-        dialog.add(panel);
-        dialog.setLocationRelativeTo(parent);
-        dialog.setVisible(true);
-    }
-
-    private static void showRoleDashboard() {
-        if (currentUser == null) return;
-
-        JFrame frame = new JFrame("Flight Booking System - Dashboard");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(900, 600);
-        frame.setLocationRelativeTo(null);
-
-        JTabbedPane tabbedPane = new JTabbedPane();
-
-        if (currentUser instanceof Administrator) {
-            tabbedPane.addTab("User Management", createAdminUserPanel());
-            tabbedPane.addTab("System Settings", createSystemSettingsPanel());
-        } else if (currentUser instanceof Agent) {
-            tabbedPane.addTab("Flight Management", createAgentFlightPanel());
-            tabbedPane.addTab("Bookings", createAgentBookingPanel());
-        } else if (currentUser instanceof Customer) {
-            tabbedPane.addTab("Search Flights", createCustomerSearchPanel());
-            tabbedPane.addTab("My Bookings", createCustomerBookingsPanel());
-        }
-
-        frame.add(tabbedPane);
-        frame.setVisible(true);
-    }
-
-    // ADMIN PANELS
-    private static JPanel createAdminUserPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        // Table showing users
-        JTable userTable = new JTable(getUserTableModel());
-        JScrollPane scrollPane = new JScrollPane(userTable);
-
-        // Toolbar
-        JToolBar toolbar = new JToolBar();
-        JButton btnAdd = new JButton("Add User");
-        JButton btnEdit = new JButton("Edit");
-
-        btnAdd.addActionListener(e -> {
-            JTextField txtUserId = new JTextField();
-            JTextField txtUsername = new JTextField();
-            JTextField txtPassword = new JTextField();
-            JTextField txtName = new JTextField();
-            JTextField txtEmail = new JTextField();
-            JTextField txtContact = new JTextField();
-            JComboBox<String> cmbRole = new JComboBox<>(new String[]{"Customer", "Agent", "Administrator"});
-
-            Object[] message = {
-                "User ID:", txtUserId,
-                "Username:", txtUsername,
-                "Password:", txtPassword,
-                "Name:", txtName,
-                "Email:", txtEmail,
-                "Contact:", txtContact,
-                "Role:", cmbRole
-            };
-
-            int option = JOptionPane.showConfirmDialog(null, message, "Add User", JOptionPane.OK_CANCEL_OPTION);
-            if (option == JOptionPane.OK_OPTION) {
-                Administrator admin = (Administrator) currentUser;
-                boolean success = admin.createUser(
-                    txtUserId.getText().trim(),
-                    txtUsername.getText().trim(),
-                    txtPassword.getText().trim(),
-                    txtName.getText().trim(),
-                    txtEmail.getText().trim(),
-                    txtContact.getText().trim(),
-                    cmbRole.getSelectedItem().toString()
-                );
-                if (success) {
-                    userTable.setModel(getUserTableModel());
-                    showSuccess("User added successfully!");
-                } else {
-                    showError("Failed to add user. Please check the input.");
-                }
-            }
-        });
-
-        btnEdit.addActionListener(e -> {
-            int selectedRow = userTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                String userId = (String) userTable.getValueAt(selectedRow, 0);
-                String username = (String) userTable.getValueAt(selectedRow, 1);
-                String name = (String) userTable.getValueAt(selectedRow, 2);
-                String role = (String) userTable.getValueAt(selectedRow, 3);
-
-                JTextField txtUsername = new JTextField(username);
-                JTextField txtName = new JTextField(name);
-                JTextField txtEmail = new JTextField();
-                JTextField txtContact = new JTextField();
-                JComboBox<String> cmbRole = new JComboBox<>(new String[]{"Customer", "Agent", "Administrator"});
-                cmbRole.setSelectedItem(role);
-
-                Object[] message = {
-                    "Username:", txtUsername,
-                    "Name:", txtName,
-                    "Email:", txtEmail,
-                    "Contact:", txtContact,
-                    "Role:", cmbRole
-                };
-
-                int option = JOptionPane.showConfirmDialog(null, message, "Edit User", JOptionPane.OK_CANCEL_OPTION);
-                if (option == JOptionPane.OK_OPTION) {
-                    Administrator admin = (Administrator) currentUser;
-                    boolean success = admin.updateUser(
-                        userId,
-                        txtUsername.getText().trim(),
-                        txtName.getText().trim(),
-                        txtEmail.getText().trim(),
-                        txtContact.getText().trim(),
-                        cmbRole.getSelectedItem().toString()
-                    );
-                    if (success) {
-                        userTable.setModel(getUserTableModel());
-                        showSuccess("User updated successfully!");
-                    } else {
-                        showError("Failed to update user.");
-                    }
-                }
-            } else {
-                showError("Please select a user to edit.");
-            }
-        });
-
-        toolbar.add(btnAdd);
-        toolbar.add(btnEdit);
-
-        panel.add(toolbar, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        loginButton.addActionListener(e -> showLoginDialog());
+        registerButton.addActionListener(e -> showRegisterDialog());
+        resetPasswordButton.addActionListener(e -> showResetPasswordDialog());
 
         return panel;
     }
 
-    private static JPanel createSystemSettingsPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private static JPanel createCustomerPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+        panel.setBackground(CYAN);
 
-        JTable settingsTable = new JTable(getSystemSettingsModel());
-        JScrollPane scrollPane = new JScrollPane(settingsTable);
+        JLabel welcomeLabel = new JLabel("Welcome, Customer!");
+        welcomeLabel.setBounds(100, 50, 300, 30);
+        welcomeLabel.setForeground(DARK_BLUE);
+        panel.add(welcomeLabel);
 
-        JToolBar toolbar = new JToolBar();
-        JButton btnEdit = new JButton("Edit Setting");
+        JButton searchFlightsButton = new JButton("Search Flights");
+        searchFlightsButton.setBounds(150, 100, 200, 30);
+        searchFlightsButton.setBackground(LIGHT_BLUE);
+        searchFlightsButton.setForeground(DARK_BLUE);
+        panel.add(searchFlightsButton);
 
-        btnEdit.addActionListener(e -> {
-            int selectedRow = settingsTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                String settingName = (String) settingsTable.getValueAt(selectedRow, 0);
-                JTextField txtValue = new JTextField((String) settingsTable.getValueAt(selectedRow, 1));
-                Object[] message = {
-                    "New Value:", txtValue
-                };
-                int option = JOptionPane.showConfirmDialog(null, message, "Edit Setting", JOptionPane.OK_CANCEL_OPTION);
-                if (option == JOptionPane.OK_OPTION) {
-                    Administrator admin = (Administrator) currentUser;
-                    admin.modifySystemSettings(settingName, txtValue.getText());
-                    settingsTable.setModel(getSystemSettingsModel());
-                }
-            } else {
-                showError("Please select a setting to edit.");
-            }
+        JButton bookFlightButton = new JButton("Book a Flight");
+        bookFlightButton.setBounds(150, 150, 200, 30);
+        bookFlightButton.setBackground(LIGHT_BLUE);
+        bookFlightButton.setForeground(DARK_BLUE);
+        panel.add(bookFlightButton);
+
+        JButton viewBookingsButton = new JButton("View Bookings");
+        viewBookingsButton.setBounds(150, 200, 200, 30);
+        viewBookingsButton.setBackground(LIGHT_BLUE);
+        viewBookingsButton.setForeground(DARK_BLUE);
+        panel.add(viewBookingsButton);
+
+        JButton cancelBookingButton = new JButton("Cancel Booking");
+        cancelBookingButton.setBounds(150, 250, 200, 30);
+        cancelBookingButton.setBackground(LIGHT_BLUE);
+        cancelBookingButton.setForeground(DARK_BLUE);
+        panel.add(cancelBookingButton);
+
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.setBounds(150, 300, 200, 30);
+        logoutButton.setBackground(LIGHT_BLUE);
+        logoutButton.setForeground(DARK_BLUE);
+        panel.add(logoutButton);
+
+        searchFlightsButton.addActionListener(e -> searchFlights());
+        bookFlightButton.addActionListener(e -> bookFlight());
+        viewBookingsButton.addActionListener(e -> viewBookings());
+        cancelBookingButton.addActionListener(e -> cancelBooking());
+        logoutButton.addActionListener(e -> {
+            currentUser = null;
+            cardLayout.show(cards, "MAIN");
         });
-
-        toolbar.add(btnEdit);
-        panel.add(toolbar, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
     }
 
-    // AGENT PANELS
-    private static JPanel createAgentFlightPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private static JPanel createAgentPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+        panel.setBackground(LIGHT_BLUE);
 
-        JTable flightTable = new JTable(getFlightTableModel());
-        JScrollPane scrollPane = new JScrollPane(flightTable);
+        JLabel welcomeLabel = new JLabel("Welcome, Agent!");
+        welcomeLabel.setBounds(100, 50, 300, 30);
+        welcomeLabel.setForeground(DARK_BLUE);
+        panel.add(welcomeLabel);
 
-        JToolBar toolbar = new JToolBar();
-        JButton btnEdit = new JButton("Edit");
-        JButton btnDelete = new JButton("Delete");
-        JButton btnAdd = new JButton("Add Flight");
-        toolbar.add(btnAdd);
+        JButton addFlightButton = new JButton("Add a Flight");
+        addFlightButton.setBounds(150, 100, 200, 30);
+        addFlightButton.setBackground(CYAN);
+        addFlightButton.setForeground(DARK_BLUE);
+        panel.add(addFlightButton);
 
-        btnAdd.addActionListener(e -> {
-            JDialog dialog = new JDialog((Frame) null, "Add Flight", true);
-            dialog.setSize(400, 400);
-            dialog.setLocationRelativeTo(null);
+        JButton viewFlightsButton = new JButton("View Flights");
+        viewFlightsButton.setBounds(150, 150, 200, 30);
+        viewFlightsButton.setBackground(CYAN);
+        viewFlightsButton.setForeground(DARK_BLUE);
+        panel.add(viewFlightsButton);
 
-            JPanel panel1 = new JPanel(new GridLayout(8, 2, 10, 10));
-            panel1.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JButton createBookingButton = new JButton("Create Booking");
+        createBookingButton.setBounds(150, 200, 200, 30);
+        createBookingButton.setBackground(CYAN);
+        createBookingButton.setForeground(DARK_BLUE);
+        panel.add(createBookingButton);
 
-            JTextField txtFlightNumber = new JTextField();
-            JTextField txtAirline = new JTextField();
-            JTextField txtOrigin = new JTextField();
-            JTextField txtDestination = new JTextField();
-            JTextField txtDepartureTime = new JTextField();
-            JTextField txtArrivalTime = new JTextField();
-            JTextField txtPrice = new JTextField();
+        JButton showReportsButton = new JButton("Show Reports");
+        showReportsButton.setBounds(150, 250, 200, 30);
+        showReportsButton.setBackground(CYAN);
+        showReportsButton.setForeground(DARK_BLUE);
+        panel.add(showReportsButton);
 
-            panel1.add(new JLabel("Flight Number:"));
-            panel1.add(txtFlightNumber);
-            panel1.add(new JLabel("Airline:"));
-            panel1.add(txtAirline);
-            panel1.add(new JLabel("Origin:"));
-            panel1.add(txtOrigin);
-            panel1.add(new JLabel("Destination:"));
-            panel1.add(txtDestination);
-            panel1.add(new JLabel("Departure Time:"));
-            panel1.add(txtDepartureTime);
-            panel1.add(new JLabel("Arrival Time:"));
-            panel1.add(txtArrivalTime);
-            panel1.add(new JLabel("Price (Economy):"));
-            panel1.add(txtPrice);
+        JButton printTicketButton = new JButton("Print Ticket");
+        printTicketButton.setBounds(150, 300, 200, 30);
+        printTicketButton.setBackground(CYAN);
+        printTicketButton.setForeground(DARK_BLUE);
+        panel.add(printTicketButton);
 
-            JButton btnSave = new JButton("Save");
-            btnSave.addActionListener(event -> {
-                String flightNumber = txtFlightNumber.getText().trim();
-                String airline = txtAirline.getText().trim();
-                String origin = txtOrigin.getText().trim();
-                String destination = txtDestination.getText().trim();
-                String departureTime = txtDepartureTime.getText().trim();
-                String arrivalTime = txtArrivalTime.getText().trim();
-                String price = txtPrice.getText().trim();
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.setBounds(150, 350, 200, 30);
+        logoutButton.setBackground(CYAN);
+        logoutButton.setForeground(DARK_BLUE);
+        panel.add(logoutButton);
 
-                // Validate input
-                if (flightNumber.isEmpty() || airline.isEmpty() || origin.isEmpty() || destination.isEmpty() ||
-                    departureTime.isEmpty() || arrivalTime.isEmpty() || price.isEmpty()) {
-                    showError("All fields are required.");
-                    return;
-                }
-
-                try {
-                    double economyPrice = Double.parseDouble(price);
-
-                    // Add flight to the database
-                    Agent agent = (Agent) currentUser;
-                    boolean success = agent.manageFlights(
-                        flightNumber, airline, origin, destination, departureTime, arrivalTime, economyPrice, "add"
-                    );
-
-                    if (success) {
-                        // Refresh the flight table
-                        flightTable.setModel(getFlightTableModel());
-                        showSuccess("Flight added successfully!");
-                        dialog.dispose();
-                    } else {
-                        showError("Failed to add flight. Please check the input.");
-                    }
-                } catch (NumberFormatException ex) {
-                    showError("Invalid price format. Please enter a valid number.");
-                }
-            });
-
-            panel1.add(btnSave);
-            dialog.add(panel1);
-            dialog.setVisible(true);
+        addFlightButton.addActionListener(e -> addFlight());
+        viewFlightsButton.addActionListener(e -> viewFlights());
+        createBookingButton.addActionListener(e -> createBookingForCustomer());
+        showReportsButton.addActionListener(e -> showFlightReports());
+        printTicketButton.addActionListener(e -> printTicket());
+        logoutButton.addActionListener(e -> {
+            currentUser = null;
+            cardLayout.show(cards, "MAIN");
         });
-
-        btnEdit.addActionListener(e -> {
-            int selectedRow = flightTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                String flightId = (String) flightTable.getValueAt(selectedRow, 0);
-                Flight flight = getFlightById(flightId);
-                showFlightDialog("Edit Flight", flight, flightTable);
-            } else {
-                showError("Please select a flight to edit.");
-            }
-        });
-
-        btnDelete.addActionListener(e -> {
-            int selectedRow = flightTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                int confirm = JOptionPane.showConfirmDialog(
-                    panel,
-                    "Are you sure you want to delete this flight?",
-                    "Confirm Delete",
-                    JOptionPane.YES_NO_OPTION
-                );
-                if (confirm == JOptionPane.YES_OPTION) {
-                    String flightNumber = (String) flightTable.getValueAt(selectedRow, 0);
-                    Agent agent = (Agent) currentUser;
-                    boolean success = agent.manageFlights(flightNumber, null, null, null, null, null, 0, "delete");
-                    if (success) {
-                        flightTable.setModel(getFlightTableModel());
-                        showSuccess("Flight deleted successfully.");
-                    } else {
-                        showError("Failed to delete flight. Please try again.");
-                    }
-                }
-            } else {
-                showError("Please select a flight to delete.");
-            }
-        });
-
-        toolbar.add(btnEdit);
-        toolbar.add(btnDelete);
-
-        panel.add(toolbar, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
     }
 
-    private static JPanel createAgentBookingPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private static JPanel createAdminPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+        panel.setBackground(DARK_BLUE);
 
-        JTable bookingsTable = new JTable(getAgentBookingsModel());
-        JScrollPane scrollPane = new JScrollPane(bookingsTable);
+        JLabel welcomeLabel = new JLabel("Welcome, Administrator!");
+        welcomeLabel.setBounds(100, 20, 300, 30);
+        welcomeLabel.setForeground(VERY_LIGHT_CYAN);
+        panel.add(welcomeLabel);
 
-        JToolBar toolbar = new JToolBar();
-        JButton btnCancelBooking = new JButton("Cancel Booking");
-        JButton btnConfirmPayment = new JButton("Confirm Payment");
+        JButton createUserButton = new JButton("Create User");
+        createUserButton.setBounds(150, 70, 200, 30);
+        createUserButton.setBackground(LIGHT_BLUE);
+        createUserButton.setForeground(DARK_BLUE);
+        panel.add(createUserButton);
 
-        btnCancelBooking.addActionListener(e -> {
-            int selectedRow = bookingsTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                String bookingReference = (String) bookingsTable.getValueAt(selectedRow, 0);
-                Agent agent = (Agent) currentUser;
-                boolean success = agent.cancelBooking(bookingReference);
-                if (success) {
-                    bookingsTable.setModel(getAgentBookingsModel());
-                    showSuccess("Booking canceled successfully.");
-                } else {
-                    showError("Failed to cancel booking.");
-                }
-            } else {
-                showError("Please select a booking to cancel.");
-            }
+        JButton modifySettingsButton = new JButton("Modify System Settings");
+        modifySettingsButton.setBounds(150, 120, 200, 30);
+        modifySettingsButton.setBackground(LIGHT_BLUE);
+        modifySettingsButton.setForeground(DARK_BLUE);
+        panel.add(modifySettingsButton);
+
+        JButton viewLogsButton = new JButton("View Logs");
+        viewLogsButton.setBounds(150, 170, 200, 30);
+        viewLogsButton.setBackground(LIGHT_BLUE);
+        viewLogsButton.setForeground(DARK_BLUE);
+        panel.add(viewLogsButton);
+
+        JButton manageAccessButton = new JButton("Manage User Access");
+        manageAccessButton.setBounds(150, 220, 200, 30);
+        manageAccessButton.setBackground(LIGHT_BLUE);
+        manageAccessButton.setForeground(DARK_BLUE);
+        panel.add(manageAccessButton);
+
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.setBounds(150, 270, 200, 30);
+        logoutButton.setBackground(LIGHT_BLUE);
+        logoutButton.setForeground(DARK_BLUE);
+        panel.add(logoutButton);
+
+        // Add action listeners for each button
+        createUserButton.addActionListener(e -> showCreateUserPanel());
+        modifySettingsButton.addActionListener(e -> showModifySettingsPanel());
+        viewLogsButton.addActionListener(e -> showLogsPanel());
+        manageAccessButton.addActionListener(e -> showManageAccessPanel());
+        logoutButton.addActionListener(e -> {
+            currentUser = null;
+            cardLayout.show(cards, "MAIN");
         });
-
-        btnConfirmPayment.addActionListener(e -> {
-            int selectedRow = bookingsTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                String bookingReference = (String) bookingsTable.getValueAt(selectedRow, 0);
-                String paymentStatus = (String) bookingsTable.getValueAt(selectedRow, 4);
-
-                if ("Pending".equalsIgnoreCase(paymentStatus)) {
-                    String[] paymentMethods = {"Credit Card", "Bank Transfer"};
-                    String selectedMethod = (String) JOptionPane.showInputDialog(
-                        panel,
-                        "Select Payment Method:",
-                        "Payment Confirmation",
-                        JOptionPane.QUESTION_MESSAGE,
-                        null,
-                        paymentMethods,
-                        paymentMethods[0]
-                    );
-
-                    if (selectedMethod != null) {
-                        // Get flight price from database
-                        String flightNumber = (String) bookingsTable.getValueAt(selectedRow, 1);
-                        String sql = "SELECT f.economy_price FROM flights f " +
-                                   "JOIN bookings b ON b.flight_id = f.id " +
-                                   "WHERE b.reference = ?";
-                        try (Connection conn = DBConnection.getConnection();
-                             PreparedStatement stmt = conn.prepareStatement(sql)) {
-                            stmt.setString(1, bookingReference);
-                            ResultSet rs = stmt.executeQuery();
-                            if (rs.next()) {
-                                double price = rs.getDouble("economy_price");
-                                Payment payment = new Payment(
-                                    "PAY" + System.currentTimeMillis(),
-                                    bookingReference,
-                                    String.format("%.2f", price),
-                                    selectedMethod,
-                                    "Completed",
-                                    java.time.LocalDate.now().toString()
-                                );
-                                payment.processPayment();
-                                bookingsTable.setModel(getAgentBookingsModel());
-                                showSuccess("Payment confirmed successfully!");
-                            } else {
-                                showError("Could not find flight price for this booking.");
-                            }
-                        } catch (SQLException ex) {
-                            showError("Error processing payment: " + ex.getMessage());
-                        }
-                    }
-                } else {
-                    showError("Payment is already completed for this booking.");
-                }
-            } else {
-                showError("Please select a booking to confirm payment.");
-            }
-        });
-
-        toolbar.add(btnCancelBooking);
-        toolbar.add(btnConfirmPayment);
-        panel.add(toolbar, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
     }
 
-    // CUSTOMER PANELS
-    private static JPanel createCustomerSearchPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private static void showLoginDialog() {
+        JTextField usernameField = new JTextField();
+        JPasswordField passwordField = new JPasswordField();
 
-        JPanel searchPanel = new JPanel(new GridLayout(1, 2, 5, 5));
-        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        JTextField txtFlightNumber = new JTextField();
-        JButton btnSearch = new JButton("Search");
-        JButton btnBook = new JButton("Book Flight");
-
-        searchPanel.add(new JLabel("Flight Number:"));
-        searchPanel.add(txtFlightNumber);
-        searchPanel.add(btnSearch);
-
-        JTable resultsTable = new JTable();
-        JScrollPane scrollPane = new JScrollPane(resultsTable);
-
-        btnSearch.addActionListener(e -> {
-            String flightNumber = txtFlightNumber.getText().trim();
-            if (flightNumber.isEmpty()) {
-                showError("Please enter a flight number.");
-                return;
-            }
-
-            Customer customer = (Customer) currentUser;
-            List<Flight> flights = customer.searchFlights(flightNumber);
-            resultsTable.setModel(getFlightResultsModel(flights));
-        });
-
-        btnBook.addActionListener(e -> {
-            int selectedRow = resultsTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                // Retrieve the flight number from the selected row
-                String flightNumber = (String) resultsTable.getValueAt(selectedRow, 0);
-                Customer customer = (Customer) currentUser;
-
-                // Book the flight
-                boolean success = customer.bookFlight(flightNumber);
-                if (success) {
-                    // Refresh the "My Bookings" table
-                    JTabbedPane parentTabbedPane = (JTabbedPane) SwingUtilities.getAncestorOfClass(JTabbedPane.class, panel);
-                    if (parentTabbedPane != null) {
-                        int bookingsTabIndex = parentTabbedPane.indexOfTab("My Bookings");
-                        if (bookingsTabIndex != -1) {
-                            JPanel bookingsPanel = (JPanel) parentTabbedPane.getComponentAt(bookingsTabIndex);
-                            JTable bookingsTable = (JTable) ((JScrollPane) bookingsPanel.getComponent(1)).getViewport().getView();
-                            bookingsTable.setModel(getCustomerBookingsModel());
-                        }
-                    }
-                }
-                // Removed pop-up messages (showSuccess and showError)
-            }
-        });
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.add(btnBook);
-
-        panel.add(searchPanel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
-    private static JPanel createCustomerBookingsPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        JTable bookingsTable = new JTable(getCustomerBookingsModel());
-        JScrollPane scrollPane = new JScrollPane(bookingsTable);
-
-        JToolBar toolbar = new JToolBar();
-        JButton btnCancel = new JButton("Cancel Booking");
-        JButton btnConfirmPayment = new JButton("Confirm Payment");
-
-        btnCancel.addActionListener(e -> {
-            int selectedRow = bookingsTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                String bookingReference = (String) bookingsTable.getValueAt(selectedRow, 0);
-                Customer customer = (Customer) currentUser;
-                customer.cancelBooking(bookingReference);
-                bookingsTable.setModel(getCustomerBookingsModel());
-                showSuccess("Booking canceled successfully.");
-            } else {
-                showError("Please select a booking to cancel.");
-            }
-        });
-
-        btnConfirmPayment.addActionListener(e -> {
-            int selectedRow = bookingsTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                String bookingReference = (String) bookingsTable.getValueAt(selectedRow, 0);
-                String paymentStatus = (String) bookingsTable.getValueAt(selectedRow, 3);
-
-                if ("Pending".equalsIgnoreCase(paymentStatus)) {
-                    String[] paymentMethods = {"Credit Card", "Bank Transfer"};
-                    String selectedMethod = (String) JOptionPane.showInputDialog(
-                        panel,
-                        "Select Payment Method:",
-                        "Payment Confirmation",
-                        JOptionPane.QUESTION_MESSAGE,
-                        null,
-                        paymentMethods,
-                        paymentMethods[0]
-                    );
-
-                    if (selectedMethod != null) {
-                        // Get flight price from database
-                        String flightNumber = (String) bookingsTable.getValueAt(selectedRow, 1);
-                        String sql = "SELECT f.economy_price FROM flights f " +
-                                   "JOIN bookings b ON b.flight_id = f.id " +
-                                   "WHERE b.reference = ?";
-                        try (Connection conn = DBConnection.getConnection();
-                             PreparedStatement stmt = conn.prepareStatement(sql)) {
-                            stmt.setString(1, bookingReference);
-                            ResultSet rs = stmt.executeQuery();
-                            if (rs.next()) {
-                                double price = rs.getDouble("economy_price");
-                                
-                                // Create a dialog for payment details
-                                JDialog paymentDialog = new JDialog((Frame) null, "Payment Details", true);
-                                paymentDialog.setSize(400, 300);
-                                paymentDialog.setLocationRelativeTo(null);
-
-                                JPanel paymentPanel = new JPanel(new GridLayout(0, 2, 10, 10));
-                                paymentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-                                // Add price display
-                                paymentPanel.add(new JLabel("Amount to Pay:"));
-                                paymentPanel.add(new JLabel(String.format("$%.2f", price)));
-
-                                if ("Credit Card".equals(selectedMethod)) {
-                                    // Credit Card fields
-                                    JTextField cardNumberField = new JTextField();
-                                    JTextField expiryDateField = new JTextField();
-                                    JTextField cvvField = new JTextField();
-                                    JTextField cardHolderField = new JTextField();
-
-                                    paymentPanel.add(new JLabel("Card Number:"));
-                                    paymentPanel.add(cardNumberField);
-                                    paymentPanel.add(new JLabel("Expiry Date (MM/YY):"));
-                                    paymentPanel.add(expiryDateField);
-                                    paymentPanel.add(new JLabel("CVV:"));
-                                    paymentPanel.add(cvvField);
-                                    paymentPanel.add(new JLabel("Card Holder Name:"));
-                                    paymentPanel.add(cardHolderField);
-
-                                    JButton confirmButton = new JButton("Confirm Payment");
-                                    confirmButton.addActionListener(event -> {
-                                        // Validate credit card details
-                                        if (cardNumberField.getText().trim().isEmpty() ||
-                                            expiryDateField.getText().trim().isEmpty() ||
-                                            cvvField.getText().trim().isEmpty() ||
-                                            cardHolderField.getText().trim().isEmpty()) {
-                                            showError("All credit card fields are required.");
-                                            return;
-                                        }
-
-                                        // Process payment with credit card details
-                                        Payment payment = new Payment(
-                                            "PAY" + System.currentTimeMillis(),
-                                            bookingReference,
-                                            String.format("%.2f", price),
-                                            selectedMethod,
-                                            "Completed",
-                                            java.time.LocalDate.now().toString()
-                                        );
-                                        payment.processPayment();
-                                        bookingsTable.setModel(getCustomerBookingsModel());
-                                        showSuccess("Payment confirmed successfully!");
-                                        paymentDialog.dispose();
-                                    });
-                                    paymentPanel.add(confirmButton);
-
-                                } else if ("Bank Transfer".equals(selectedMethod)) {
-                                    // Bank Transfer fields
-                                    JTextField accountNumberField = new JTextField();
-                                    JTextField bankNameField = new JTextField();
-                                    JTextField routingNumberField = new JTextField();
-
-                                    paymentPanel.add(new JLabel("Account Number:"));
-                                    paymentPanel.add(accountNumberField);
-                                    paymentPanel.add(new JLabel("Bank Name:"));
-                                    paymentPanel.add(bankNameField);
-                                    paymentPanel.add(new JLabel("Routing Number:"));
-                                    paymentPanel.add(routingNumberField);
-
-                                    JButton confirmButton = new JButton("Confirm Payment");
-                                    confirmButton.addActionListener(event -> {
-                                        // Validate bank transfer details
-                                        if (accountNumberField.getText().trim().isEmpty() ||
-                                            bankNameField.getText().trim().isEmpty() ||
-                                            routingNumberField.getText().trim().isEmpty()) {
-                                            showError("All bank transfer fields are required.");
-                                            return;
-                                        }
-
-                                        // Process payment with bank transfer details
-                                        Payment payment = new Payment(
-                                            "PAY" + System.currentTimeMillis(),
-                                            bookingReference,
-                                            String.format("%.2f", price),
-                                            selectedMethod,
-                                            "Completed",
-                                            java.time.LocalDate.now().toString()
-                                        );
-                                        payment.processPayment();
-                                        bookingsTable.setModel(getCustomerBookingsModel());
-                                        showSuccess("Payment confirmed successfully!");
-                                        paymentDialog.dispose();
-                                    });
-                                    paymentPanel.add(confirmButton);
-                                }
-
-                                paymentDialog.add(paymentPanel);
-                                paymentDialog.setVisible(true);
-                            } else {
-                                showError("Could not find flight price for this booking.");
-                            }
-                        } catch (SQLException ex) {
-                            showError("Error processing payment: " + ex.getMessage());
-                        }
-                    }
-                } else {
-                    showError("Payment is already completed for this booking.");
-                }
-            } else {
-                showError("Please select a booking to confirm payment.");
-            }
-        });
-
-        toolbar.add(btnCancel);
-        toolbar.add(btnConfirmPayment);
-        panel.add(toolbar, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    // UTILITY METHODS
-    private static javax.swing.table.DefaultTableModel getUserTableModel() {
-        String[] columns = {"User ID", "Username", "Name", "Role", "Status"};
-        List<User> users = new FileManager().loadUsers();
-
-        Object[][] data = new Object[users.size()][5];
-        for (int i = 0; i < users.size(); i++) {
-            User u = users.get(i);
-            String status = getUserStatus(u.getUserId());
-            data[i] = new Object[]{
-                u.getUserId(),
-                u.getUsername(),
-                u.getName(),
-                u.getRole(),
-                status
-            };
-        }
-
-        return new javax.swing.table.DefaultTableModel(data, columns) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+        Object[] message = {
+                "Username:", usernameField,
+                "Password:", passwordField
         };
+
+        int option = JOptionPane.showConfirmDialog(frame, message, "Login", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+
+            try {
+                currentUser = User.login(username, password);
+                if (currentUser != null) {
+                    if (currentUser instanceof Customer) {
+                        cardLayout.show(cards, "CUSTOMER");
+                    } else if (currentUser instanceof Agent) {
+                        cardLayout.show(cards, "AGENT");
+                    } else if (currentUser instanceof Administrator) {
+                        cardLayout.show(cards, "ADMIN");
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Invalid credentials!");
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(frame, "Login error: " + e.getMessage());
+            }
+        }
     }
 
-    private static String getUserStatus(String userId) {
-        String sql = "SELECT status FROM users WHERE id = ?";
+    private static void showRegisterDialog() {
+        JTextField usernameField = new JTextField();
+        JPasswordField passwordField = new JPasswordField();
+        JTextField nameField = new JTextField();
+        JTextField emailField = new JTextField();
+        JTextField mobileField = new JTextField();
+
+        Object[] message = {
+                "Username:", usernameField,
+                "Password:", passwordField,
+                "Name:", nameField,
+                "Email:", emailField,
+                "Mobile:", mobileField
+        };
+
+        int option = JOptionPane.showConfirmDialog(frame, message, "Register", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+            String name = nameField.getText();
+            String email = emailField.getText();
+            String mobile = mobileField.getText();
+
+            try {
+                boolean success = User.register(username, password, name, email, mobile, "Customer");
+                if (success) {
+                    JOptionPane.showMessageDialog(frame, "Registration successful! Please log in.");
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Registration failed.");
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(frame, "Registration error: " + e.getMessage());
+            }
+        }
+    }
+
+    private static void bookFlight() {
+    if (!(currentUser instanceof Customer)) return;
+    Customer customer = (Customer) currentUser;
+
+    String flightNumber = JOptionPane.showInputDialog(frame, "Enter Flight Number to book:");
+    if (flightNumber == null || flightNumber.isEmpty()) {
+        JOptionPane.showMessageDialog(frame, "Flight number cannot be empty.");
+        return;
+    }
+
+    String seatClass = JOptionPane.showInputDialog(frame, "Enter seat class (economy, business, first class):");
+    if (seatClass == null || seatClass.isEmpty()) {
+        JOptionPane.showMessageDialog(frame, "Seat class cannot be empty.");
+        return;
+    }
+
+    try {
+        String flightId = getFlightIdByNumber(flightNumber);
+        if (flightId == null) {
+            JOptionPane.showMessageDialog(frame, "Flight not found.");
+            return;
+        }
+
+        customer.createBooking(flightId, seatClass);
+        JOptionPane.showMessageDialog(frame, "Booking successful!");
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(frame, "Booking error: " + e.getMessage());
+    }
+}
+
+    private static String getFlightIdByNumber(String flightNumber) {
+        String sql = "SELECT id FROM flights WHERE flight_number = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, userId);
+            stmt.setString(1, flightNumber);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return rs.getString("status");
+                return rs.getString("id");
             }
         } catch (SQLException e) {
-            System.out.println("Error fetching user status: " + e.getMessage());
+            JOptionPane.showMessageDialog(frame, "Database error: " + e.getMessage());
         }
-        return "Unknown";
+        return null;
     }
 
-    private static javax.swing.table.DefaultTableModel getSystemSettingsModel() {
-        String[] columns = {"Setting Name", "Value"};
-        List<SystemSetting> settings = new FileManager().loadSystemSettings();
+    private static void viewBookings() {
+        if (!(currentUser instanceof Customer)) return;
+        Customer customer = (Customer) currentUser;
 
-        Object[][] data = new Object[settings.size()][2];
-        for (int i = 0; i < settings.size(); i++) {
-            SystemSetting s = settings.get(i);
-            data[i] = new Object[]{
-                s.getName(),
-                s.getValue()
-            };
-        }
-
-        return new javax.swing.table.DefaultTableModel(data, columns) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
+        try {
+            List<Booking> bookings = customer.getBookings();
+            if (bookings.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "No bookings found.");
+                return;
             }
-        };
+
+            String[] columnNames = {"Reference", "Flight Number", "Status", "Payment Status"};
+            Object[][] data = new Object[bookings.size()][columnNames.length];
+
+            for (int i = 0; i < bookings.size(); i++) {
+                Booking booking = bookings.get(i);
+                data[i][0] = booking.getBookingReference();
+                data[i][1] = booking.getFlight();
+                data[i][2] = booking.getStatus();
+                data[i][3] = booking.getPaymentStatus();
+            }
+
+            showTable("View Bookings", columnNames, data);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Error retrieving bookings: " + e.getMessage());
+        }
+    }
+    private static void addFlight() {
+        if (!(currentUser instanceof Agent)) return;
+        Agent agent = (Agent) currentUser;
+
+        // Create input fields
+        JTextField flightNumberField = new JTextField();
+        JTextField airlineField = new JTextField();
+        JTextField originField = new JTextField();
+        JTextField destinationField = new JTextField();
+        JTextField departureTimeField = new JTextField();
+        JTextField arrivalTimeField = new JTextField();
+        JTextField economySeatsField = new JTextField();
+        JTextField businessSeatsField = new JTextField();
+        JTextField firstClassSeatsField = new JTextField();
+        JTextField economyPriceField = new JTextField();
+        JTextField businessPriceField = new JTextField();
+        JTextField firstClassPriceField = new JTextField();
+
+        // Create a panel to hold the input fields
+        JPanel panel = new JPanel(new GridLayout(12, 2));
+        panel.add(new JLabel("Flight Number:"));
+        panel.add(flightNumberField);
+        panel.add(new JLabel("Airline:"));
+        panel.add(airlineField);
+        panel.add(new JLabel("Origin:"));
+        panel.add(originField);
+        panel.add(new JLabel("Destination:"));
+        panel.add(destinationField);
+        panel.add(new JLabel("Departure Time (YYYY-MM-DD HH:MM):"));
+        panel.add(departureTimeField);
+        panel.add(new JLabel("Arrival Time (YYYY-MM-DD HH:MM):"));
+        panel.add(arrivalTimeField);
+        panel.add(new JLabel("Economy Seats:"));
+        panel.add(economySeatsField);
+        panel.add(new JLabel("Business Seats:"));
+        panel.add(businessSeatsField);
+        panel.add(new JLabel("First Class Seats:"));
+        panel.add(firstClassSeatsField);
+        panel.add(new JLabel("Economy Price:"));
+        panel.add(economyPriceField);
+        panel.add(new JLabel("Business Price:"));
+        panel.add(businessPriceField);
+        panel.add(new JLabel("First Class Price:"));
+        panel.add(firstClassPriceField);
+
+        // Show the dialog
+        int result = JOptionPane.showConfirmDialog(frame, panel, "Add Flight", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                // Parse input values
+                String flightNumber = flightNumberField.getText();
+                String airline = airlineField.getText();
+                String origin = originField.getText();
+                String destination = destinationField.getText();
+                String departureTime = departureTimeField.getText();
+                String arrivalTime = arrivalTimeField.getText();
+                int economySeats = Integer.parseInt(economySeatsField.getText());
+                int businessSeats = Integer.parseInt(businessSeatsField.getText());
+                int firstClassSeats = Integer.parseInt(firstClassSeatsField.getText());
+                double economyPrice = Double.parseDouble(economyPriceField.getText());
+                double businessPrice = Double.parseDouble(businessPriceField.getText());
+                double firstClassPrice = Double.parseDouble(firstClassPriceField.getText());
+
+                // Call the agent's method to add the flight
+                boolean success = agent.manageFlights(flightNumber, airline, origin, destination, departureTime, arrivalTime,
+                        economySeats, businessSeats, firstClassSeats, economyPrice, businessPrice, firstClassPrice, "add");
+                if (success) {
+                    JOptionPane.showMessageDialog(frame, "Flight added successfully!");
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Failed to add flight.");
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(frame, "Invalid input format. Please check your entries.");
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(frame, "Error adding flight: " + e.getMessage());
+            }
+        }
     }
 
-    private static TableModel getFlightTableModel() {
-        String[] columnNames = {"Flight Number", "Airline", "Origin", "Destination", "Departure Time", "Arrival Time", "Price"};
-        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+    private static void viewFlights() {
+        if (!(currentUser instanceof Agent)) return;
+        Agent agent = (Agent) currentUser;
 
-        String sql = "SELECT flight_number, airline, origin, destination, departure_time, arrival_time, economy_price FROM flights";
+        try {
+            List<Flight> flights = agent.getAllFlights();
+            if (flights.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "No flights found.");
+                return;
+            }
 
+            String[] columnNames = {"Flight Number", "Airline", "Origin", "Destination", "Departure Time", "Arrival Time"};
+            Object[][] data = new Object[flights.size()][columnNames.length];
+
+            for (int i = 0; i < flights.size(); i++) {
+                Flight flight = flights.get(i);
+                data[i][0] = flight.getFlightNumber();
+                data[i][1] = flight.getAirline();
+                data[i][2] = flight.getOrigin();
+                data[i][3] = flight.getDestination();
+                data[i][4] = flight.getDepartureTime();
+                data[i][5] = flight.getArrivalTime();
+            }
+
+            showTable("View Flights", columnNames, data);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Error retrieving flights: " + e.getMessage());
+        }
+    }
+
+    private static void manageUsers() {
+        if (!(currentUser instanceof Administrator)) return;
+        JOptionPane.showMessageDialog(frame, "Admin can manage users here.");
+    }
+
+    private static void viewAllBookings() {
+        if (!(currentUser instanceof Administrator)) return;
+        Administrator admin = (Administrator) currentUser;
+
+        try {
+            List<Booking> bookings = admin.getAllBookings();
+            if (bookings.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "No bookings found.");
+                return;
+            }
+
+            String[] columnNames = {"Reference", "Customer ID", "Flight ID"};
+            Object[][] data = new Object[bookings.size()][columnNames.length];
+
+            for (int i = 0; i < bookings.size(); i++) {
+                Booking booking = bookings.get(i);
+                data[i][0] = booking.getBookingReference();
+                data[i][1] = booking.getCustomer();
+                data[i][2] = booking.getFlight();
+            }
+
+            showTable("View All Bookings", columnNames, data);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Error retrieving bookings: " + e.getMessage());
+        }
+    }
+
+    public String generateReports() {
+        StringBuilder report = new StringBuilder();
+        String sql = "SELECT flight_id, COUNT(*) AS total_bookings FROM bookings GROUP BY flight_id";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                String flightNumber = rs.getString("flight_number");
-                String airline = rs.getString("airline");
-                String origin = rs.getString("origin");
-                String destination = rs.getString("destination");
-                String departureTime = rs.getString("departure_time");
-                String arrivalTime = rs.getString("arrival_time");
-                double price = rs.getDouble("economy_price");
-
-                model.addRow(new Object[]{flightNumber, airline, origin, destination, departureTime, arrivalTime, price});
+                report.append("Flight ID: ").append(rs.getString("flight_id"))
+                      .append(", Total Bookings: ").append(rs.getInt("total_bookings"))
+                      .append("\n");
             }
         } catch (SQLException e) {
-            System.out.println("Error fetching flight data: " + e.getMessage());
+            System.out.println("Error generating reports: " + e.getMessage());
         }
-
-        return model;
+        return report.toString();
     }
 
-    private static javax.swing.table.DefaultTableModel getFlightResultsModel(List<Flight> flights) {
-        String[] columns = {"Flight Number", "Airline", "Origin", "Destination", "Departure Time", "Arrival Time", "Price"};
+    private static void showFlightReports() {
+        if (!(currentUser instanceof Agent)) return;
+        Agent agent = (Agent) currentUser;
 
-        Object[][] data = new Object[flights.size()][7];
-        for (int i = 0; i < flights.size(); i++) {
-            Flight f = flights.get(i);
-            data[i] = new Object[]{
-                f.getFlightNumber(),
-                f.getAirline(),
-                f.getOrigin(),
-                f.getDestination(),
-                f.getDepartureTime(),
-                f.getArrivalTime(),
-                f.getPrices().split(",")[0] // Show economy price
-            };
+        try {
+            String report = agent.generateReports();
+            JOptionPane.showMessageDialog(frame, report.isEmpty() ? "No reports available." : report);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Error generating reports: " + e.getMessage());
         }
+    }
 
-        return new javax.swing.table.DefaultTableModel(data, columns) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+    private static void createBookingForCustomer() {
+        if (!(currentUser instanceof Agent)) return;
+        Agent agent = (Agent) currentUser;
+
+        String customerId = JOptionPane.showInputDialog(frame, "Enter Customer ID:");
+        if (customerId == null) return;
+
+        String flightNumber = JOptionPane.showInputDialog(frame, "Enter Flight Number:");
+        if (flightNumber == null) return;
+
+        String seatClass = JOptionPane.showInputDialog(frame, "Enter Seat Class (economy, business, first class):");
+        if (seatClass == null) return;
+
+        String numPassengersStr = JOptionPane.showInputDialog(frame, "Enter Number of Passengers:");
+        if (numPassengersStr == null) return;
+
+        try {
+            int numPassengers = Integer.parseInt(numPassengersStr);
+            agent.createBookingForCustomer(customerId, flightNumber, seatClass, numPassengers);
+            JOptionPane.showMessageDialog(frame, "Booking created successfully!");
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(frame, "Invalid number of passengers.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Error creating booking: " + e.getMessage());
+        }
+    }
+
+    private static void showResetPasswordDialog() {
+        JTextField usernameField = new JTextField();
+        JPasswordField currentPasswordField = new JPasswordField();
+        JPasswordField newPasswordField = new JPasswordField();
+
+        Object[] message = {
+            "Username:", usernameField,
+            "Current Password:", currentPasswordField,
+            "New Password:", newPasswordField
         };
-    }
 
-    private static DefaultTableModel getCustomerBookingsModel() {
-        String[] columns = {"Booking Reference", "Flight Number", "Status", "Payment Status"};
-        Customer customer = (Customer) currentUser;
-        List<Booking> bookings = customer.getBookings();
+        int option = JOptionPane.showConfirmDialog(frame, message, "Reset Password", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            String username = usernameField.getText();
+            String currentPassword = new String(currentPasswordField.getPassword());
+            String newPassword = new String(newPasswordField.getPassword());
 
-        Object[][] data = new Object[bookings.size()][4];
-        for (int i = 0; i < bookings.size(); i++) {
-            Booking booking = bookings.get(i);
-            data[i][0] = booking.getBookingReference();
-            data[i][1] = booking.getFlight();
-            data[i][2] = booking.getStatus();
-            data[i][3] = booking.getPaymentStatus();
-        }
-
-        return new DefaultTableModel(data, columns);
-    }
-
-    private static javax.swing.table.DefaultTableModel getAgentBookingsModel() {
-        String[] columns = {"Booking Reference", "Customer", "Flight", "Status", "Payment Status"};
-        List<Booking> bookings = new FileManager().loadBookings();
-
-        Object[][] data = new Object[bookings.size()][5];
-        for (int i = 0; i < bookings.size(); i++) {
-            Booking b = bookings.get(i);
-            data[i] = new Object[]{
-                b.getBookingReference(),
-                b.getCustomer(),
-                b.getFlight(),
-                b.getStatus(),
-                b.getPaymentStatus()
-            };
-        }
-
-        return new javax.swing.table.DefaultTableModel(data, columns) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-    }
-
-    private static void showFlightDialog(String title, Flight flight, JTable flightTable) {
-        JDialog dialog = new JDialog((Frame) null, title, true);
-        dialog.setSize(400, 400);
-        dialog.setLocationRelativeTo(null);
-
-        JPanel panel = new JPanel(new GridLayout(8, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        JTextField txtFlightNumber = new JTextField(flight != null ? flight.getFlightNumber() : "");
-        JTextField txtAirline = new JTextField(flight != null ? flight.getAirline() : "");
-        JTextField txtOrigin = new JTextField(flight != null ? flight.getOrigin() : "");
-        JTextField txtDestination = new JTextField(flight != null ? flight.getDestination() : "");
-        JTextField txtDepartureTime = new JTextField(flight != null ? flight.getDepartureTime() : "");
-        JTextField txtArrivalTime = new JTextField(flight != null ? flight.getArrivalTime() : "");
-        JTextField txtPrice = new JTextField(flight != null ? flight.getPrices().split(",")[0] : "");
-
-        panel.add(new JLabel("Flight Number:"));
-        panel.add(txtFlightNumber);
-        panel.add(new JLabel("Airline:"));
-        panel.add(txtAirline);
-        panel.add(new JLabel("Origin:"));
-        panel.add(txtOrigin);
-        panel.add(new JLabel("Destination:"));
-        panel.add(txtDestination);
-        panel.add(new JLabel("Departure Time:"));
-        panel.add(txtDepartureTime);
-        panel.add(new JLabel("Arrival Time:"));
-        panel.add(txtArrivalTime);
-        panel.add(new JLabel("Price (Economy):"));
-        panel.add(txtPrice);
-
-        JButton btnSave = new JButton("Save");
-        btnSave.addActionListener(e -> {
-            String flightNumber = txtFlightNumber.getText().trim();
-            String airline = txtAirline.getText().trim();
-            String origin = txtOrigin.getText().trim();
-            String destination = txtDestination.getText().trim();
-            String departureTime = txtDepartureTime.getText().trim();
-            String arrivalTime = txtArrivalTime.getText().trim();
-            String price = txtPrice.getText().trim();
-
-            // Validate input
-            if (flightNumber.isEmpty() || airline.isEmpty() || origin.isEmpty() || destination.isEmpty() ||
-                departureTime.isEmpty() || arrivalTime.isEmpty() || price.isEmpty()) {
-                showError("All fields are required.");
+            if (!validatePassword(newPassword)) {
+                JOptionPane.showMessageDialog(frame, "New password must be at least 6 characters long and contain at least 1 number.");
                 return;
             }
 
             try {
-                double economyPrice = Double.parseDouble(price);
-
-                // Update flight in the database
-                Agent agent = (Agent) currentUser;
-                boolean success = agent.manageFlights(
-                    flightNumber, airline, origin, destination, departureTime, arrivalTime, economyPrice, "update"
-                );
-
+                boolean success = resetPassword(username, currentPassword, newPassword);
                 if (success) {
-                    flightTable.setModel(getFlightTableModel());
-                    showSuccess("Flight updated successfully!");
-                    dialog.dispose();
+                    JOptionPane.showMessageDialog(frame, "Password reset successfully!");
                 } else {
-                    showError("Failed to update flight. Please check the input.");
+                    JOptionPane.showMessageDialog(frame, "Invalid username or current password.");
                 }
-            } catch (NumberFormatException ex) {
-                showError("Invalid price format. Please enter a valid number.");
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(frame, "Error resetting password: " + e.getMessage());
+            }
+        }
+    }
+
+    private static boolean validatePassword(String password) {
+        if (password.length() < 6) return false;
+        return password.matches(".*\\d.*"); // Check if it contains at least one number
+    }
+
+    private static void showTable(String title, String[] columnNames, Object[][] data) {
+        JTable table = new JTable(data, columnNames);
+        JScrollPane scrollPane = new JScrollPane(table);
+        table.setFillsViewportHeight(true);
+
+        JFrame tableFrame = new JFrame(title);
+        tableFrame.setSize(1000, 600);
+        tableFrame.add(scrollPane);
+        tableFrame.setVisible(true);
+    }
+
+    private static void searchFlights() {
+        if (!(currentUser instanceof Customer)) return;
+        Customer customer = (Customer) currentUser;
+
+        String flightNumber = JOptionPane.showInputDialog(frame, "Enter Flight Number:");
+        if (flightNumber == null || flightNumber.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "Flight number cannot be empty.");
+            return;
+        }
+
+        try {
+            List<Flight> flights = customer.searchFlights(flightNumber);
+            if (flights.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "No flights found for the given flight number.");
+                return;
+            }
+
+            String[] columnNames = {"Flight Number", "Airline", "Origin", "Destination", "Departure Time", "Arrival Time"};
+            Object[][] data = new Object[flights.size()][columnNames.length];
+
+            for (int i = 0; i < flights.size(); i++) {
+                Flight flight = flights.get(i);
+                data[i][0] = flight.getFlightNumber();
+                data[i][1] = flight.getAirline();
+                data[i][2] = flight.getOrigin();
+                data[i][3] = flight.getDestination();
+                data[i][4] = flight.getDepartureTime();
+                data[i][5] = flight.getArrivalTime();
+            }
+
+            showTable("Search Flights", columnNames, data);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Error searching flights: " + e.getMessage());
+        }
+    }
+
+    private static void cancelBooking() {
+        if (!(currentUser instanceof Customer)) return;
+        Customer customer = (Customer) currentUser;
+
+        String bookingReference = JOptionPane.showInputDialog(frame, "Enter Booking Reference to cancel:");
+        if (bookingReference == null || bookingReference.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "Booking reference cannot be empty.");
+            return;
+        }
+
+        try {
+            boolean success = customer.cancelBooking(bookingReference);
+            if (success) {
+                JOptionPane.showMessageDialog(frame, "Booking canceled successfully!");
+            } else {
+                JOptionPane.showMessageDialog(frame, "Failed to cancel booking. Please check the reference.");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Error canceling booking: " + e.getMessage());
+        }
+    }
+
+    private static void showCreateUserPanel() {
+        JPanel panel = new JPanel(new GridLayout(6, 2));
+        panel.add(new JLabel("User ID:"));
+        JTextField userIdField = new JTextField();
+        panel.add(userIdField);
+
+        panel.add(new JLabel("Username:"));
+        JTextField usernameField = new JTextField();
+        panel.add(usernameField);
+
+        panel.add(new JLabel("Password:"));
+        JPasswordField passwordField = new JPasswordField();
+        panel.add(passwordField);
+
+        panel.add(new JLabel("Name:"));
+        JTextField nameField = new JTextField();
+        panel.add(nameField);
+
+        panel.add(new JLabel("Email:"));
+        JTextField emailField = new JTextField();
+        panel.add(emailField);
+
+        panel.add(new JLabel("Role:"));
+        JComboBox<String> roleComboBox = new JComboBox<>(new String[]{"Customer", "Agent", "Administrator"});
+        panel.add(roleComboBox);
+
+        JFrame createUserFrame = new JFrame("Create User");
+        createUserFrame.setSize(400, 300);
+        createUserFrame.add(panel);
+        createUserFrame.setVisible(true);
+
+        JButton submitButton = new JButton("Submit");
+        submitButton.addActionListener(e -> {
+            String userId = userIdField.getText();
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+            String name = nameField.getText();
+            String email = emailField.getText();
+            String role = (String) roleComboBox.getSelectedItem();
+
+            Administrator admin = (Administrator) currentUser;
+            boolean success = admin.createUser(userId, username, password, name, email, "", role);
+            if (success) {
+                JOptionPane.showMessageDialog(createUserFrame, "User created successfully!");
+            } else {
+                JOptionPane.showMessageDialog(createUserFrame, "Failed to create user.");
             }
         });
-
-        panel.add(btnSave);
-        dialog.add(panel);
-        dialog.setVisible(true);
+        panel.add(submitButton);
     }
 
-    private static Flight getFlightById(String flightId) {
-        String sql = "SELECT * FROM flights WHERE flight_number = ?";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, flightId);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                String flightNumber = rs.getString("flight_number");
-                String airline = rs.getString("airline");
-                String origin = rs.getString("origin");
-                String destination = rs.getString("destination");
-                String departureTime = rs.getString("departure_time");
-                String arrivalTime = rs.getString("arrival_time");
-                String prices = rs.getDouble("economy_price") + "";
+    private static void showModifySettingsPanel() {
+        JPanel panel = new JPanel(new GridLayout(2, 2));
+        panel.add(new JLabel("Setting Name:"));
+        JTextField settingNameField = new JTextField();
+        panel.add(settingNameField);
 
-                return new Flight(flightNumber, airline, origin, destination, departureTime, arrivalTime, null, prices);
-            }
-        } catch (SQLException e) {
-            System.out.println("Error fetching flight: " + e.getMessage());
-        }
-        return null;
-    }
+        panel.add(new JLabel("New Value:"));
+        JTextField newValueField = new JTextField();
+        panel.add(newValueField);
 
-    private static void showError(String message) {
-        JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
-    }
+        JFrame modifySettingsFrame = new JFrame("Modify System Settings");
+        modifySettingsFrame.setSize(400, 200);
+        modifySettingsFrame.add(panel);
+        modifySettingsFrame.setVisible(true);
 
-    private static void showSuccess(String message) {
-        JOptionPane.showMessageDialog(null, message, "Success", JOptionPane.INFORMATION_MESSAGE);
-    }
+        JButton submitButton = new JButton("Submit");
+        submitButton.addActionListener(e -> {
+            String settingName = settingNameField.getText();
+            String newValue = newValueField.getText();
 
-    private static void showChangePasswordDialog(JFrame parent) {
-        JDialog dialog = new JDialog(parent, "Change Password", true);
-        dialog.setSize(400, 300);
-        dialog.setLocationRelativeTo(parent);
-
-        JPanel panel = new JPanel(new GridLayout(0, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.decode("#04009A"));
-
-        JTextField txtUsername = new JTextField();
-        JPasswordField txtCurrentPassword = new JPasswordField();
-        JPasswordField txtNewPassword = new JPasswordField();
-        JPasswordField txtConfirmPassword = new JPasswordField();
-
-        // Style the components
-        txtUsername.setBackground(Color.decode("#C0FEFC"));
-        txtUsername.setForeground(Color.decode("#04009A"));
-        txtCurrentPassword.setBackground(Color.decode("#C0FEFC"));
-        txtCurrentPassword.setForeground(Color.decode("#04009A"));
-        txtNewPassword.setBackground(Color.decode("#C0FEFC"));
-        txtNewPassword.setForeground(Color.decode("#04009A"));
-        txtConfirmPassword.setBackground(Color.decode("#C0FEFC"));
-        txtConfirmPassword.setForeground(Color.decode("#04009A"));
-
-        JLabel lblUsername = new JLabel("Username:");
-        lblUsername.setForeground(Color.decode("#C0FEFC"));
-        JLabel lblCurrentPassword = new JLabel("Current Password:");
-        lblCurrentPassword.setForeground(Color.decode("#C0FEFC"));
-        JLabel lblNewPassword = new JLabel("New Password:");
-        lblNewPassword.setForeground(Color.decode("#C0FEFC"));
-        JLabel lblConfirmPassword = new JLabel("Confirm New Password:");
-        lblConfirmPassword.setForeground(Color.decode("#C0FEFC"));
-
-        // Add password requirements label
-        JLabel lblRequirements = new JLabel("<html>Password must contain:<br>- At least 6 letters<br>- At least 2 numbers</html>");
-        lblRequirements.setForeground(Color.decode("#C0FEFC"));
-        lblRequirements.setFont(new Font(lblRequirements.getFont().getName(), Font.ITALIC, 12));
-
-        panel.add(lblUsername);
-        panel.add(txtUsername);
-        panel.add(lblCurrentPassword);
-        panel.add(txtCurrentPassword);
-        panel.add(lblNewPassword);
-        panel.add(txtNewPassword);
-        panel.add(lblConfirmPassword);
-        panel.add(txtConfirmPassword);
-        panel.add(lblRequirements);
-        panel.add(new JLabel("")); // Empty label for grid alignment
-
-        JButton btnUpdate = new JButton("Update Password");
-        btnUpdate.setBackground(Color.decode("#C0FEFC"));
-        btnUpdate.setForeground(Color.decode("#04009A"));
-        btnUpdate.addActionListener(e -> {
-            String username = txtUsername.getText().trim();
-            String currentPassword = new String(txtCurrentPassword.getPassword());
-            String newPassword = new String(txtNewPassword.getPassword());
-            String confirmPassword = new String(txtConfirmPassword.getPassword());
-
-            // Validate input
-            if (username.isEmpty() || currentPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
-                showError("All fields are required.");
+            if (settingName.isEmpty() || newValue.isEmpty()) {
+                JOptionPane.showMessageDialog(modifySettingsFrame, "Setting name and value cannot be empty.");
                 return;
             }
 
-            if (!newPassword.equals(confirmPassword)) {
-                showError("New passwords do not match.");
-                return;
-            }
-
-            // Validate password requirements
-            int letterCount = 0;
-            int numberCount = 0;
-            for (char c : newPassword.toCharArray()) {
-                if (Character.isLetter(c)) {
-                    letterCount++;
-                } else if (Character.isDigit(c)) {
-                    numberCount++;
-                }
-            }
-
-            if (letterCount < 6) {
-                showError("Password must contain at least 6 letters.");
-                return;
-            }
-            if (numberCount < 2) {
-                showError("Password must contain at least 2 numbers.");
-                return;
-            }
-
-            // Verify current password
-            User user = User.login(username, currentPassword);
-            if (user == null) {
-                showError("Current password is incorrect.");
-                return;
-            }
-
-            // Update password in database
-            String sql = "UPDATE users SET password = ? WHERE username = ?";
+            // Update the setting in the database
+            String sql = "UPDATE system_settings SET value = ? WHERE name = ?";
             try (Connection conn = DBConnection.getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, newPassword);
-                stmt.setString(2, username);
+                stmt.setString(1, newValue);
+                stmt.setString(2, settingName);
                 int rowsUpdated = stmt.executeUpdate();
                 if (rowsUpdated > 0) {
-                    showSuccess("Password updated successfully!");
-                    dialog.dispose();
+                    JOptionPane.showMessageDialog(modifySettingsFrame, "Setting updated: " + settingName + " = " + newValue);
                 } else {
-                    showError("Failed to update password.");
+                    JOptionPane.showMessageDialog(modifySettingsFrame, "Setting not found.");
                 }
             } catch (SQLException ex) {
-                showError("Error updating password: " + ex.getMessage());
+                JOptionPane.showMessageDialog(modifySettingsFrame, "Error updating setting: " + ex.getMessage());
             }
         });
+        panel.add(submitButton);
+    }
 
-        panel.add(btnUpdate);
-        dialog.add(panel);
-        dialog.setVisible(true);
+    private static void showLogsPanel() {
+        Administrator admin = (Administrator) currentUser;
+        JFrame logsFrame = new JFrame("System Logs");
+        logsFrame.setSize(800, 600);
+
+        JTextArea logsArea = new JTextArea();
+        logsArea.setEditable(false);
+
+        JScrollPane scrollPane = new JScrollPane(logsArea);
+        logsFrame.add(scrollPane);
+
+        logsFrame.setVisible(true);
+
+        // Fetch logs and display them
+        StringBuilder logs = new StringBuilder();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM system_logs ORDER BY log_date DESC");
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                logs.append("Date: ").append(rs.getTimestamp("log_date"))
+                    .append(", Action: ").append(rs.getString("action"))
+                    .append(", Performed By: ").append(rs.getString("performed_by"))
+                    .append("\n");
+            }
+        } catch (SQLException e) {
+            logs.append("Error retrieving logs: ").append(e.getMessage());
+        }
+        logsArea.setText(logs.toString());
+    }
+
+    private static void showManageAccessPanel() {
+        // Create the main panel with GridBagLayout
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10); // Add padding between components
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Add "User Name" label and text field
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("User Name:"), gbc);
+
+        gbc.gridx = 1;
+        JTextField userIdField = new JTextField(15);
+        panel.add(userIdField, gbc);
+
+        // Add "New Role" label and combo box
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(new JLabel("New Role:"), gbc);
+
+        gbc.gridx = 1;
+        JComboBox<String> roleComboBox = new JComboBox<>(new String[]{"Customer", "Agent", "Administrator"});
+        panel.add(roleComboBox, gbc);
+
+        // Add the Submit button
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        JButton submitButton = new JButton("Submit");
+        panel.add(submitButton, gbc);
+
+        // Create and display the frame
+        JFrame manageAccessFrame = new JFrame("Manage User Access");
+        manageAccessFrame.setSize(400, 200);
+        manageAccessFrame.add(panel);
+        manageAccessFrame.setVisible(true);
+
+        // Add action listener for the Submit button
+        submitButton.addActionListener(e -> {
+            String userId = userIdField.getText();
+            String newRole = (String) roleComboBox.getSelectedItem();
+
+            if (userId.isEmpty()) {
+                JOptionPane.showMessageDialog(manageAccessFrame, "User Name cannot be empty.");
+                return;
+            }
+
+            // Update the user's role in the database
+            String sql = "UPDATE users SET role = ? WHERE username = ?";
+            try (Connection conn = DBConnection.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, newRole);
+                stmt.setString(2, userId);
+                int rowsUpdated = stmt.executeUpdate();
+                if (rowsUpdated > 0) {
+                    JOptionPane.showMessageDialog(manageAccessFrame, "User access updated: " + userId + " -> " + newRole);
+                } else {
+                    JOptionPane.showMessageDialog(manageAccessFrame, "User not found.");
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(manageAccessFrame, "Error updating user access: " + ex.getMessage());
+            }
+        });
+        panel.add(submitButton);
+    }
+
+    private static void printTicket() {
+        if (!(currentUser instanceof Agent)) return;
+        Agent agent = (Agent) currentUser;
+
+        // Fetch bookings for the agent to select
+        List<Booking> bookings = agent.getAllBookings();
+        if (bookings.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "No bookings available to print tickets.");
+            return;
+        }
+
+        // Create a table to display bookings
+        String[] columnNames = {"Booking Reference", "Customer ID", "Flight ID", "Status"};
+        Object[][] data = new Object[bookings.size()][columnNames.length];
+        for (int i = 0; i < bookings.size(); i++) {
+            Booking booking = bookings.get(i);
+            data[i][0] = booking.getBookingReference();
+            data[i][1] = booking.getCustomer();
+            data[i][2] = booking.getFlight();
+            data[i][3] = booking.getStatus();
+        }
+
+        JTable table = new JTable(data, columnNames);
+        JScrollPane scrollPane = new JScrollPane(table);
+        table.setFillsViewportHeight(true);
+
+        // Show the table in a dialog
+        int result = JOptionPane.showConfirmDialog(frame, scrollPane, "Select a Booking to Print Ticket", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(frame, "No booking selected.");
+                return;
+            }
+
+            // Get the selected booking reference
+            String bookingReference = (String) data[selectedRow][0];
+            Booking selectedBooking = bookings.stream()
+                    .filter(b -> b.getBookingReference().equals(bookingReference))
+                    .findFirst()
+                    .orElse(null);
+
+            if (selectedBooking == null) {
+                JOptionPane.showMessageDialog(frame, "Invalid booking selected.");
+                return;
+            }
+
+            // Fetch flight details for the selected booking
+            Flight flight = agent.getFlightDetails(selectedBooking.getFlight());
+            if (flight == null) {
+                JOptionPane.showMessageDialog(frame, "Flight details not found for the selected booking.");
+                return;
+            }
+
+            // Generate and display the ticket
+            StringBuilder ticket = new StringBuilder();
+            ticket.append("----- Flight Ticket -----\n")
+                  .append("Booking Reference: ").append(selectedBooking.getBookingReference()).append("\n")
+                  .append("Customer ID: ").append(selectedBooking.getCustomer()).append("\n")
+                  .append("Flight Number: ").append(flight.getFlightNumber()).append("\n")
+                  .append("Airline: ").append(flight.getAirline()).append("\n")
+                  .append("Origin: ").append(flight.getOrigin()).append("\n")
+                  .append("Destination: ").append(flight.getDestination()).append("\n")
+                  .append("Departure Time: ").append(flight.getDepartureTime()).append("\n")
+                  .append("Arrival Time: ").append(flight.getArrivalTime()).append("\n")
+                  .append("-------------------------");
+
+            JOptionPane.showMessageDialog(frame, ticket.toString(), "Flight Ticket", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 }

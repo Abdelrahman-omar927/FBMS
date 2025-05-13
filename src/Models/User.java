@@ -92,6 +92,33 @@ public class User {
         return false;
     }
 
+    public static boolean resetPassword(String username, String currentPassword, String newPassword) {
+        if (newPassword.length() < 6 || !newPassword.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("New password must be at least 6 characters long and contain at least 1 number.");
+        }
+
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, currentPassword);
+
+            try (var rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String updateSql = "UPDATE users SET password = ? WHERE username = ?";
+                    try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                        updateStmt.setString(1, newPassword);
+                        updateStmt.setString(2, username);
+                        return updateStmt.executeUpdate() > 0;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Password reset failed: " + e.getMessage());
+        }
+        return false;
+    }
+
     public String getUserId() {
         return userId;
     }

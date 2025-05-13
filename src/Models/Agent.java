@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import db.DBConnection;
 
@@ -45,18 +47,27 @@ public class Agent extends User {
     }
 
     public boolean manageFlights(String flightNumber, String airline, String origin, String destination,
-                             String departureTime, String arrivalTime, double economyPrice, String action) {
+                             String departureTime, String arrivalTime, int economySeats, int businessSeats,
+                             int firstClassSeats, double economyPrice, double businessPrice, double firstClassPrice, String action) {
+        if (flightNumber == null || flightNumber.isEmpty() || airline == null || airline.isEmpty()) {
+            System.out.println("Invalid flight details provided.");
+            return false;
+        }
+
         String sql;
         if ("add".equalsIgnoreCase(action)) {
-            sql = "INSERT INTO flights (flight_number, airline, origin, destination, departure_time, arrival_time, economy_price) " +
-                  "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            sql = "INSERT INTO flights (flight_number, airline, origin, destination, departure_time, arrival_time, " +
+                  "economy_seats, business_seats, first_class_seats, economy_price, business_price, first_class_price) " +
+                  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         } else if ("update".equalsIgnoreCase(action)) {
-            sql = "UPDATE flights SET airline = ?, origin = ?, destination = ?, departure_time = ?, arrival_time = ?, economy_price = ? " +
-                  "WHERE flight_number = ?";
+            sql = "UPDATE flights SET airline = ?, origin = ?, destination = ?, departure_time = ?, arrival_time = ?, " +
+                  "economy_seats = ?, business_seats = ?, first_class_seats = ?, economy_price = ?, business_price = ?, " +
+                  "first_class_price = ? WHERE flight_number = ?";
         } else if ("delete".equalsIgnoreCase(action)) {
             sql = "DELETE FROM flights WHERE flight_number = ?";
         } else {
-            return false; // Invalid action
+            System.out.println("Invalid action: " + action);
+            return false;
         }
 
         try (Connection conn = DBConnection.getConnection();
@@ -68,15 +79,25 @@ public class Agent extends User {
                 stmt.setString(4, destination);
                 stmt.setString(5, departureTime);
                 stmt.setString(6, arrivalTime);
-                stmt.setDouble(7, economyPrice);
+                stmt.setInt(7, economySeats);
+                stmt.setInt(8, businessSeats);
+                stmt.setInt(9, firstClassSeats);
+                stmt.setDouble(10, economyPrice);
+                stmt.setDouble(11, businessPrice);
+                stmt.setDouble(12, firstClassPrice);
             } else if ("update".equalsIgnoreCase(action)) {
                 stmt.setString(1, airline);
                 stmt.setString(2, origin);
                 stmt.setString(3, destination);
                 stmt.setString(4, departureTime);
                 stmt.setString(5, arrivalTime);
-                stmt.setDouble(6, economyPrice);
-                stmt.setString(7, flightNumber);
+                stmt.setInt(6, economySeats);
+                stmt.setInt(7, businessSeats);
+                stmt.setInt(8, firstClassSeats);
+                stmt.setDouble(9, economyPrice);
+                stmt.setDouble(10, businessPrice);
+                stmt.setDouble(11, firstClassPrice);
+                stmt.setString(12, flightNumber);
             } else if ("delete".equalsIgnoreCase(action)) {
                 stmt.setString(1, flightNumber);
             }
@@ -89,7 +110,13 @@ public class Agent extends User {
         }
     }
 
-    public void createBookingForCustomer(String customerId, String flightId, String seatClass, int numberOfPassengers) {
+    public void createBookingForCustomer(String customerId, String flightNumber, String seatClass, int numberOfPassengers) {
+        String flightId = getFlightIdByNumber(flightNumber);
+        if (flightId == null) {
+            System.out.println("Flight not found: " + flightNumber);
+            return;
+        }
+
         String sql = "INSERT INTO bookings (customer_id, flight_id, seat_class, number_of_passengers, status) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -126,20 +153,22 @@ public class Agent extends User {
         }
     }
 
-    public void generateReports() {
+    public String generateReports() {
+        StringBuilder report = new StringBuilder();
         String sql = "SELECT flight_id, COUNT(*) AS total_bookings FROM bookings GROUP BY flight_id";
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
-            ResultSet rs = stmt.executeQuery();
-            System.out.println("Flight Reports:");
             while (rs.next()) {
-                System.out.println("Flight ID: " + rs.getString("flight_id") +
-                                   ", Total Bookings: " + rs.getInt("total_bookings"));
+                report.append("Flight ID: ").append(rs.getString("flight_id"))
+                      .append(", Total Bookings: ").append(rs.getInt("total_bookings"))
+                      .append("\n");
             }
         } catch (SQLException e) {
             System.out.println("Error generating reports: " + e.getMessage());
         }
+        return report.toString();
     }
 
     public boolean cancelBooking(String bookingReference) {
@@ -151,7 +180,98 @@ public class Agent extends User {
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.out.println("Error canceling booking: " + e.getMessage());
-            return false;
         }
+        return false;
+    }
+
+    public List<Flight> getAllFlights() {
+        List<Flight> flights = new ArrayList<>();
+        String sql = "SELECT * FROM flights";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String flightNumber = rs.getString("flight_number");
+                String airline = rs.getString("airline");
+                String origin = rs.getString("origin");
+                String destination = rs.getString("destination");
+                String departureTime = rs.getString("departure_time");
+                String arrivalTime = rs.getString("arrival_time");
+                String availableSeats = rs.getInt("economy_seats") + "," +
+                                        rs.getInt("business_seats") + "," +
+                                        rs.getInt("first_class_seats");
+                String prices = rs.getDouble("economy_price") + "," +
+                                rs.getDouble("business_price") + "," +
+                                rs.getDouble("first_class_price");
+
+                Flight flight = new Flight(flightNumber, airline, origin, destination, departureTime, arrivalTime, availableSeats, prices);
+                flights.add(flight);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error retrieving flights: " + e.getMessage());
+        }
+        return flights;
+    }
+
+    public Flight getFlightDetails(String flightId) {
+        String sql = "SELECT * FROM flights WHERE id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, flightId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String flightNumber = rs.getString("flight_number");
+                String airline = rs.getString("airline");
+                String origin = rs.getString("origin");
+                String destination = rs.getString("destination");
+                String departureTime = rs.getString("departure_time");
+                String arrivalTime = rs.getString("arrival_time");
+                String availableSeats = rs.getInt("economy_seats") + "," +
+                                        rs.getInt("business_seats") + "," +
+                                        rs.getInt("first_class_seats");
+                String prices = rs.getDouble("economy_price") + "," +
+                                rs.getDouble("business_price") + "," +
+                                rs.getDouble("first_class_price");
+
+                return new Flight(flightNumber, airline, origin, destination, departureTime, arrivalTime, availableSeats, prices);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error retrieving flight details: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private String getFlightIdByNumber(String flightNumber) {
+        String sql = "SELECT id FROM flights WHERE flight_number = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, flightNumber);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("id");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error retrieving flight ID: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public List<Booking> getAllBookings() {
+        List<Booking> bookings = new ArrayList<>();
+        String sql = "SELECT * FROM bookings";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String bookingReference = rs.getString("reference");
+                String customer = rs.getString("customer_id");
+                String flight = rs.getString("flight_id");
+                String status = rs.getString("status");
+                bookings.add(new Booking(bookingReference, customer, flight, null, null, status, null));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error retrieving bookings: " + e.getMessage());
+        }
+        return bookings;
     }
 }

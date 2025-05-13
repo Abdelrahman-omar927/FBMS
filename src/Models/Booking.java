@@ -89,7 +89,7 @@ public class Booking {
         }
     }
 
-    public void calculateTotalPrice() {
+    public void calculateTotalPrice(int numberOfPassengers) {
         try (Connection connection = DBConnection.getConnection()) {
             String sql = "SELECT economy_price, business_price, first_class_price FROM flights WHERE id = ?";
             PreparedStatement statement = connection.prepareStatement(sql);
@@ -108,7 +108,8 @@ public class Booking {
                         price = resultSet.getDouble("first_class_price");
                         break;
                 }
-                System.out.println("Total price: $" + price);
+                double totalPrice = price * numberOfPassengers;
+                System.out.println("Total price: $" + totalPrice);
             }
         } catch (SQLException e) {
             System.out.println("Error calculating total price: " + e.getMessage());

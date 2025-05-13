@@ -1,0 +1,501 @@
+@startuml
+skinparam monochrome true
+
+' Abstract User class
+abstract class User {
+  -userId: String
+  -username: String
+  -password: String
+  -name: String
+  -email: String
+  -contactInfo: String
+  -role: String
+  +login(username: String, password: String): User
+  +register(username: String, password: String, name: String, email: String, contact: String, role: String): boolean
+  +updateProfile(name: String, email: String, contactInfo: String): boolean
+  +getUserId(): String
+  +getUsername(): String
+  +getPassword(): String
+  +getName(): String
+  +getEmail(): String
+  +getContactInfo(): String
+  +getRole(): String
+}
+
+' Customer class
+class Customer {
+  -customerId: String
+  -address: String
+  -bookingHistory: List<String>
+  -preferences: List<String>
+  +searchFlights(flightNumber: String): List<Flight>
+  +createBooking(flightId: String, seatClass: String, numberOfPassengers: int): void
+  +viewBookings(): void
+  +cancelBooking(bookingReference: String): void
+  +bookFlight(flightNumber: String): boolean
+  +getBookings(): List<Booking>
+  +getCustomerId(): String
+  +setCustomerId(customerId: String): void
+  +getAddress(): String
+  +setAddress(address: String): void
+  +getBookingHistory(): List<String>
+  +setBookingHistory(bookingHistory: List<String>): void
+  +getPreferences(): List<String>
+  +setPreferences(preferences: List<String>): void
+}
+
+' Agent class
+class Agent {
+  -agentId: String
+  -department: String
+  -commission: String
+  +manageFlights(flightNumber: String, airline: String, origin: String, destination: String, departureTime: String, arrivalTime: String, economyPrice: double, action: String): boolean
+  +createBookingForCustomer(customerId: String, flightId: String, seatClass: String, numberOfPassengers: int): void
+  +modifyBooking(bookingId: String, flightId: String, seatClass: String, numberOfPassengers: int): void
+  +generateReports(): void
+  +cancelBooking(bookingReference: String): boolean
+  +getAgentId(): String
+  +setAgentId(agentId: String): void
+  +getDepartment(): String
+  +setDepartment(department: String): void
+  +getCommission(): String
+  +setCommission(commission: String): void
+}
+
+' Administrator class
+class Administrator {
+  -adminId: String
+  -securityLevel: String
+  +createUser(userId: String, username: String, password: String, name: String, email: String, contact: String, role: String): boolean
+  +modifySystemSettings(settingName: String, newValue: String): void
+  +viewSystemLogs(): void
+  +manageUserAccess(userId: String, action: String): void
+  +updateUser(userId: String, username: String, name: String, email: String, contact: String, role: String): boolean
+  +getAdminId(): String
+  +setAdminId(adminId: String): void
+  +getSecurityLevel(): String
+  +setSecurityLevel(securityLevel: String): void
+}
+
+' Flight class
+class Flight {
+  -flightNumber: String
+  -airline: String
+  -origin: String
+  -destination: String
+  -departureTime: String
+  -arrivalTime: String
+  -availableSeats: String
+  -prices: String
+  +checkAvailability(): void
+  +updateSchedule(newDepartureTime: String, newArrivalTime: String): void
+  +calculatePrice(seatClass: String): void
+  +reserveSeat(seatClass: String, numberOfSeats: int): void
+  +getFlightNumber(): String
+  +setFlightNumber(flightNumber: String): void
+  +getAirline(): String
+  +setAirline(airline: String): void
+  +getOrigin(): String
+  +setOrigin(origin: String): void
+  +getDestination(): String
+  +setDestination(destination: String): void
+  +getDepartureTime(): String
+  +setDepartureTime(departureTime: String): void
+  +getArrivalTime(): String
+  +setArrivalTime(arrivalTime: String): void
+  +getAvailableSeats(): String
+  +setAvailableSeats(availableSeats: String): void
+  +getPrices(): String
+  +setPrices(prices: String): void
+}
+
+' Booking class
+class Booking {
+  -bookingReference: String
+  -customer: String
+  -flight: String
+  -passengers: String
+  -seatSelections: String
+  -status: String
+  -paymentStatus: String
+  +addPassenger(): void
+  +calculateTotalPrice(): void
+  +confirmBooking(): void
+  +cancelBooking(): void
+  +generateItinerary(): void
+  +getBookingReference(): String
+  +setBookingReference(bookingReference: String): void
+  +getCustomer(): String
+  +setCustomer(customer: String): void
+  +getFlight(): String
+  +setFlight(flight: String): void
+  +getPassengers(): String
+  +setPassengers(passengers: String): void
+  +getSeatSelections(): String
+  +setSeatSelections(seatSelections: String): void
+  +getStatus(): String
+  +setStatus(status: String): void
+  +getPaymentStatus(): String
+  +setPaymentStatus(paymentStatus: String): void
+}
+
+' Passenger class
+class Passenger {
+  -passengerId: String
+  -name: String
+  -passportNumber: String
+  -dateOfBirth: String
+  -specialRequests: String
+  +updateInfo(): void
+  +getPassengerDetails(): void
+  +getPassengerId(): String
+  +setPassengerId(passengerId: String): void
+  +getName(): String
+  +setName(name: String): void
+  +getPassportNumber(): String
+  +setPassportNumber(passportNumber: String): void
+  +getDateOfBirth(): String
+  +setDateOfBirth(dateOfBirth: String): void
+  +getSpecialRequests(): String
+  +setSpecialRequests(specialRequests: String): void
+}
+
+' Payment class
+class Payment {
+  -paymentId: String
+  -bookingReference: String
+  -amount: String
+  -method: String
+  -status: String
+  -transactionDate: String
+  +processPayment(): void
+  +validatePaymentDetails(): void
+  +updateStatus(): void
+  +getPaymentId(): String
+  +setPaymentId(paymentId: String): void
+  +getBookingReference(): String
+  +setBookingReference(bookingReference: String): void
+  +getAmount(): String
+  +setAmount(amount: String): void
+  +getMethod(): String
+  +setMethod(method: String): void
+  +getStatus(): String
+  +setStatus(status: String): void
+  +getTransactionDate(): String
+  +setTransactionDate(transactionDate: String): void
+}
+
+' BookingSystem class
+class BookingSystem {
+  -users: String
+  -flights: String
+  -bookings: String
+  -payments: String
+  -origin: String
+  -destination: String
+  +searchFlights(): void
+  +processPayment(bookingReference: String, amount: double, status: String): void
+  +createBooking(reference: String, customerId: String, flightId: String, status: String, paymentStatus: String): void
+  +cancelBooking(reference: String): void
+  +generateTicket(reference: String): void
+  +getUsers(): String
+  +setUsers(users: String): void
+  +getFlights(): String
+  +setFlights(flights: String): void
+  +getBookings(): String
+  +setBookings(bookings: String): void
+  +getPayments(): String
+  +setPayments(payments: String): void
+  +getOrigin(): String
+  +setOrigin(origin: String): void
+  +getDestination(): String
+  +setDestination(destination: String): void
+}
+
+' FileManager class
+class FileManager {
+  +saveUsers(users: List<User>): void
+  +loadUsers(): List<User>
+  +saveFlights(flights: List<Flight>): void
+  +loadFlights(): List<Flight>
+  +saveBookings(bookings: List<Booking>): void
+  +loadBookings(): List<Booking>
+  +loadSystemSettings(): List<SystemSetting>
+}
+
+' SystemSetting class (assumed from FileManager)
+class SystemSetting {
+  -settingName: String
+  -value: String
+}
+
+' Inheritance relationships
+User <|-- Customer
+User <|-- Agent
+User <|-- Administrator
+
+' Composition/Aggregation relationships
+Customer "1" *-- "0..*" Booking : has
+Booking "1" *-- "1..*" Passenger : has
+Booking "1" *-- "1" Flight : has
+Booking "1" *-- "0..1" Payment : has
+BookingSystem "1" o--> "0..*" User : manages
+BookingSystem "1" o--> "0..*" Flight : manages
+BookingSystem "1" o--> "0..*" Booking : manages
+BookingSystem "1" o--> "0..*" Payment : manages
+FileManager "1" --> "0..*" User : persists
+FileManager "1" --> "0..*" Flight : persists
+FileManager "1" --> "0..*" Booking : persists
+FileManager "1" --> "0..*" SystemSetting : persists
+
+@enduml@startuml
+skinparam monochrome true
+
+' Abstract User class
+abstract class User {
+  -userId: String
+  -username: String
+  -password: String
+  -name: String
+  -email: String
+  -contactInfo: String
+  -role: String
+  +login(username: String, password: String): User
+  +register(username: String, password: String, name: String, email: String, contact: String, role: String): boolean
+  +updateProfile(name: String, email: String, contactInfo: String): boolean
+  +getUserId(): String
+  +getUsername(): String
+  +getPassword(): String
+  +getName(): String
+  +getEmail(): String
+  +getContactInfo(): String
+  +getRole(): String
+}
+
+' Customer class
+class Customer {
+  -customerId: String
+  -address: String
+  -bookingHistory: List<String>
+  -preferences: List<String>
+  +searchFlights(flightNumber: String): List<Flight>
+  +createBooking(flightId: String, seatClass: String, numberOfPassengers: int): void
+  +viewBookings(): void
+  +cancelBooking(bookingReference: String): void
+  +bookFlight(flightNumber: String): boolean
+  +getBookings(): List<Booking>
+  +getCustomerId(): String
+  +setCustomerId(customerId: String): void
+  +getAddress(): String
+  +setAddress(address: String): void
+  +getBookingHistory(): List<String>
+  +setBookingHistory(bookingHistory: List<String>): void
+  +getPreferences(): List<String>
+  +setPreferences(preferences: List<String>): void
+}
+
+' Agent class
+class Agent {
+  -agentId: String
+  -department: String
+  -commission: String
+  +manageFlights(flightNumber: String, airline: String, origin: String, destination: String, departureTime: String, arrivalTime: String, economyPrice: double, action: String): boolean
+  +createBookingForCustomer(customerId: String, flightId: String, seatClass: String, numberOfPassengers: int): void
+  +modifyBooking(bookingId: String, flightId: String, seatClass: String, numberOfPassengers: int): void
+  +generateReports(): void
+  +cancelBooking(bookingReference: String): boolean
+  +getAgentId(): String
+  +setAgentId(agentId: String): void
+  +getDepartment(): String
+  +setDepartment(department: String): void
+  +getCommission(): String
+  +setCommission(commission: String): void
+}
+
+' Administrator class
+class Administrator {
+  -adminId: String
+  -securityLevel: String
+  +createUser(userId: String, username: String, password: String, name: String, email: String, contact: String, role: String): boolean
+  +modifySystemSettings(settingName: String, newValue: String): void
+  +viewSystemLogs(): void
+  +manageUserAccess(userId: String, action: String): void
+  +updateUser(userId: String, username: String, name: String, email: String, contact: String, role: String): boolean
+  +getAdminId(): String
+  +setAdminId(adminId: String): void
+  +getSecurityLevel(): String
+  +setSecurityLevel(securityLevel: String): void
+}
+
+' Flight class
+class Flight {
+  -flightNumber: String
+  -airline: String
+  -origin: String
+  -destination: String
+  -departureTime: String
+  -arrivalTime: String
+  -availableSeats: String
+  -prices: String
+  +checkAvailability(): void
+  +updateSchedule(newDepartureTime: String, newArrivalTime: String): void
+  +calculatePrice(seatClass: String): void
+  +reserveSeat(seatClass: String, numberOfSeats: int): void
+  +getFlightNumber(): String
+  +setFlightNumber(flightNumber: String): void
+  +getAirline(): String
+  +setAirline(airline: String): void
+  +getOrigin(): String
+  +setOrigin(origin: String): void
+  +getDestination(): String
+  +setDestination(destination: String): void
+  +getDepartureTime(): String
+  +setDepartureTime(departureTime: String): void
+  +getArrivalTime(): String
+  +setArrivalTime(arrivalTime: String): void
+  +getAvailableSeats(): String
+  +setAvailableSeats(availableSeats: String): void
+  +getPrices(): String
+  +setPrices(prices: String): void
+}
+
+' Booking class
+class Booking {
+  -bookingReference: String
+  -customer: String
+  -flight: String
+  -passengers: String
+  -seatSelections: String
+  -status: String
+  -paymentStatus: String
+  +addPassenger(): void
+  +calculateTotalPrice(): void
+  +confirmBooking(): void
+  +cancelBooking(): void
+  +generateItinerary(): void
+  +getBookingReference(): String
+  +setBookingReference(bookingReference: String): void
+  +getCustomer(): String
+  +setCustomer(customer: String): void
+  +getFlight(): String
+  +setFlight(flight: String): void
+  +getPassengers(): String
+  +setPassengers(passengers: String): void
+  +getSeatSelections(): String
+  +setSeatSelections(seatSelections: String): void
+  +getStatus(): String
+  +setStatus(status: String): void
+  +getPaymentStatus(): String
+  +setPaymentStatus(paymentStatus: String): void
+}
+
+' Passenger class
+class Passenger {
+  -passengerId: String
+  -name: String
+  -passportNumber: String
+  -dateOfBirth: String
+  -specialRequests: String
+  +updateInfo(): void
+  +getPassengerDetails(): void
+  +getPassengerId(): String
+  +setPassengerId(passengerId: String): void
+  +getName(): String
+  +setName(name: String): void
+  +getPassportNumber(): String
+  +setPassportNumber(passportNumber: String): void
+  +getDateOfBirth(): String
+  +setDateOfBirth(dateOfBirth: String): void
+  +getSpecialRequests(): String
+  +setSpecialRequests(specialRequests: String): void
+}
+
+' Payment class
+class Payment {
+  -paymentId: String
+  -bookingReference: String
+  -amount: String
+  -method: String
+  -status: String
+  -transactionDate: String
+  +processPayment(): void
+  +validatePaymentDetails(): void
+  +updateStatus(): void
+  +getPaymentId(): String
+  +setPaymentId(paymentId: String): void
+  +getBookingReference(): String
+  +setBookingReference(bookingReference: String): void
+  +getAmount(): String
+  +setAmount(amount: String): void
+  +getMethod(): String
+  +setMethod(method: String): void
+  +getStatus(): String
+  +setStatus(status: String): void
+  +getTransactionDate(): String
+  +setTransactionDate(transactionDate: String): void
+}
+
+' BookingSystem class
+class BookingSystem {
+  -users: String
+  -flights: String
+  -bookings: String
+  -payments: String
+  -origin: String
+  -destination: String
+  +searchFlights(): void
+  +processPayment(bookingReference: String, amount: double, status: String): void
+  +createBooking(reference: String, customerId: String, flightId: String, status: String, paymentStatus: String): void
+  +cancelBooking(reference: String): void
+  +generateTicket(reference: String): void
+  +getUsers(): String
+  +setUsers(users: String): void
+  +getFlights(): String
+  +setFlights(flights: String): void
+  +getBookings(): String
+  +setBookings(bookings: String): void
+  +getPayments(): String
+  +setPayments(payments: String): void
+  +getOrigin(): String
+  +setOrigin(origin: String): void
+  +getDestination(): String
+  +setDestination(destination: String): void
+}
+
+' FileManager class
+class FileManager {
+  +saveUsers(users: List<User>): void
+  +loadUsers(): List<User>
+  +saveFlights(flights: List<Flight>): void
+  +loadFlights(): List<Flight>
+  +saveBookings(bookings: List<Booking>): void
+  +loadBookings(): List<Booking>
+  +loadSystemSettings(): List<SystemSetting>
+}
+
+' SystemSetting class (assumed from FileManager)
+class SystemSetting {
+  -settingName: String
+  -value: String
+}
+
+' Inheritance relationships
+User <|-- Customer
+User <|-- Agent
+User <|-- Administrator
+
+' Composition/Aggregation relationships
+Customer "1" *-- "0..*" Booking : has
+Booking "1" *-- "1..*" Passenger : has
+Booking "1" *-- "1" Flight : has
+Booking "1" *-- "0..1" Payment : has
+BookingSystem "1" o--> "0..*" User : manages
+BookingSystem "1" o--> "0..*" Flight : manages
+BookingSystem "1" o--> "0..*" Booking : manages
+BookingSystem "1" o--> "0..*" Payment : manages
+FileManager "1" --> "0..*" User : persists
+FileManager "1" --> "0..*" Flight : persists
+FileManager "1" --> "0..*" Booking : persists
+FileManager "1" --> "0..*" SystemSetting : persists
+
+@enduml

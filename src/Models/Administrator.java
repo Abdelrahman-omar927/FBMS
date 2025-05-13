@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import db.DBConnection;
 
@@ -90,10 +92,10 @@ public class Administrator extends User {
         String sql;
         switch (action.toLowerCase()) {
             case "enable":
-                sql = "UPDATE users SET status = 'active' WHERE user_id = ?";
+                sql = "UPDATE users SET status = 'active' WHERE username = ?";
                 break;
             case "disable":
-                sql = "UPDATE users SET status = 'inactive' WHERE user_id = ?";
+                sql = "UPDATE users SET status = 'inactive' WHERE username = ?";
                 break;
             default:
                 System.out.println("Invalid action. Please specify 'enable' or 'disable'.");
@@ -128,5 +130,28 @@ public class Administrator extends User {
             System.out.println("Error updating user: " + e.getMessage());
             return false;
         }
+    }
+
+    public List<Booking> getAllBookings() {
+        List<Booking> bookings = new ArrayList<>();
+        String sql = "SELECT b.reference, b.customer_id, b.flight_id, b.status, b.payment_status " +
+                     "FROM bookings b";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String reference = rs.getString("reference");
+                String customerId = rs.getString("customer_id");
+                String flightId = rs.getString("flight_id");
+                String status = rs.getString("status");
+                String paymentStatus = rs.getString("payment_status");
+
+                Booking booking = new Booking(reference, customerId, flightId, null, null, status, paymentStatus);
+                bookings.add(booking);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error retrieving bookings: " + e.getMessage());
+        }
+        return bookings;
     }
 }
